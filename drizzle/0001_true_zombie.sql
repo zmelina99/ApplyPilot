@@ -1,0 +1,1 @@
+ALTER TABLE "job_matches" ADD COLUMN "evaluation_details" jsonb;

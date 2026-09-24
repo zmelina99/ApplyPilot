@@ -1,17 +1,14 @@
 import { sql } from 'drizzle-orm';
 import { createDb, type Database, type DbHandle } from '../../src/db/client.js';
-import { runMigrations } from '../../src/db/migrate.js';
 import { testDatabaseUrl } from '../../src/config/env.js';
 
 /**
- * Open a handle to the ISOLATED test database (TEST_DATABASE_URL) and ensure the
- * schema is migrated. env.ts refuses to fall back to DATABASE_URL, so tests can
- * never run against the dev database.
+ * Open a handle to the ISOLATED test database (TEST_DATABASE_URL). The schema is
+ * migrated once by the global setup (tests/globalSetup.ts), so this does not migrate.
+ * env.ts refuses to fall back to DATABASE_URL, so tests can never touch the dev DB.
  */
 export async function openTestDb(): Promise<DbHandle> {
-  const handle = createDb(testDatabaseUrl());
-  await runMigrations(handle.db);
-  return handle;
+  return createDb(testDatabaseUrl());
 }
 
 /** All tables, ordered so a plain TRUNCATE … CASCADE is unambiguous. */

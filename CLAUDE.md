@@ -198,14 +198,45 @@ Invariants future agents MUST preserve:
 The frontend search profile stays profile-agnostic in code so other profiles can be
 added later as configuration (see the note under "What ApplyPilot is").
 
+## Phase 2B architecture & invariants (implemented)
+
+Real job discovery + deterministic eligibility. Flow: source adapters → normalize →
+dedup/store job+source → deterministic eligibility → create/update job match →
+QUALIFIED / REJECTED / NEEDS_REVIEW → CLI shortlist. **Zero LLM calls; no browser
+automation, scraping around anti-bot systems, or application submission.** Phase 2B
+stops at the shortlist — it never creates applications.
+
+- **Source boundary:** every source implements `JobSourceAdapter` (`src/sources/*`).
+  The pipeline/CLI depend only on that interface, never on a specific job board.
+  Adapters use legitimate public APIs with an honest User-Agent; no CAPTCHA/auth
+  bypass. Current sources: Remotive, Arbeitnow, Jobicy.
+- **Missing data stays NULL** — never invented. Free-text salary is not parsed into
+  numbers; foreign-currency salary is not converted/guessed.
+- **Deterministic dedup only:** jobs are global and deduped by canonical URL; sources
+  by `(source_name, source_job_id)` / `(source_name, source_url)`. One posting seen
+  via multiple sources → one job, multiple `job_sources`. Discovery runs are
+  idempotent. No fuzzy matching.
+- **Eligibility is deterministic** (`src/eligibility/*`): produces ELIGIBLE /
+  INELIGIBLE / NEEDS_REVIEW with structured reason codes. It decides HARD ELIGIBILITY
+  only — `fit_score` stays NULL until Phase 2C. Ambiguity → NEEDS_REVIEW, never a
+  guess; a review item is created (deduped across runs), never silently dropped.
+- **Config is data, not code:** the engine reads `config/search-profile.json` (the
+  authoritative machine projection of `profile/search-rules.md`). Candidate rules are
+  never duplicated in source files. Keep the JSON in sync with the profile doc.
+- Match mapping: ELIGIBLE→(status QUALIFIED, eligibility ELIGIBLE);
+  INELIGIBLE→(REJECTED, INELIGIBLE); NEEDS_REVIEW→(PENDING, AMBIGUOUS).
+
 ## Project phases
 
 - **Phase 1 (done): Structure + candidate source of truth.** Repo skeleton, profile
   templates, verified candidate data.
 - **Phase 2A (done): Persistence & domain foundation.** PostgreSQL schema,
   repositories, application state machine, append-only events, review queue,
-  automation settings, dev CLI, tests, deterministic demo seed. **No discovery,
-  scraping, browser automation, submission, or LLM calls.**
-- **Phase 2B+ (not started):** real job discovery/ingestion, filtering & fit engine,
-  form filling/submission, reporting — deferred. Do not begin without an explicit
-  go-ahead.
+  automation settings, dev CLI, tests, deterministic demo seed.
+- **Phase 2B (done): Real discovery & deterministic eligibility.** Source adapters,
+  normalization, dedup/ingestion, deterministic eligibility engine, review routing,
+  `discover`/`shortlist`/`rejected`/`review`/`job` CLI, tests + a real live run.
+  Stops at the shortlist — no applications created.
+- **Phase 2C+ (not started):** LLM/semantic fit scoring, application form filling,
+  browser automation, submission, cover letters, reporting — deferred. Do not begin
+  without an explicit go-ahead.

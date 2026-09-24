@@ -4,6 +4,7 @@ import {
   text,
   integer,
   timestamp,
+  jsonb,
   uniqueIndex,
   index,
 } from 'drizzle-orm/pg-core';
@@ -41,6 +42,10 @@ export const jobMatches = pgTable(
     // Integer 0-100 fit score; NULL until evaluated. Avoids float ambiguity.
     fitScore: integer('fit_score'),
     fitReason: text('fit_reason'),
+    // Structured deterministic-eligibility output (reason codes, priority flag).
+    // Human-readable summary stays in `eligibility_reason`; core queryable fields
+    // (status, eligibility_status) remain columns — not buried in JSON.
+    evaluationDetails: jsonb('evaluation_details'),
     evaluatedAt: timestamp('evaluated_at', { withTimezone: true }),
     evaluationVersion: text('evaluation_version'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

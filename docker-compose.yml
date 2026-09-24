@@ -1,0 +1,27 @@
+# Minimal PostgreSQL for local development ONLY.
+# This is not production infrastructure — it exists solely to make a local database
+# easy to start. Start it with:  docker compose up -d
+#
+# It creates the dev database. Create the test database once after first start:
+#   docker compose exec db createdb -U applypilot applypilot_test
+services:
+  db:
+    image: postgres:16
+    container_name: applypilot-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: applypilot
+      POSTGRES_PASSWORD: applypilot
+      POSTGRES_DB: applypilot_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - applypilot_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U applypilot -d applypilot_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  applypilot_pgdata:

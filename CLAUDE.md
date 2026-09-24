@@ -140,10 +140,12 @@ Full rules live in `search-rules.md`; the invariants:
   answered by approved rules, a question is unsupported by the profile, a CAPTCHA or
   login/account-creation is required, or truthfulness is uncertain. Route to review.
 
-## Application tracking (Phase 2 requirement — do NOT implement yet)
+## Application tracking (implemented in Phase 2A — PostgreSQL + Drizzle)
 
-Every discovered job must eventually have persistent, auditable lifecycle tracking.
-No SQLite/DB is built in Phase 1; this only records the requirement.
+Every discovered job has persistent, auditable lifecycle tracking. Phase 2A builds
+the persistence + domain foundation (schema, repositories, state machine, events,
+review queue, automation settings, CLI, tests). See the "Phase 2A architecture &
+invariants" section below and README.md for the full model.
 
 - Track at least: job id, company, title, URL, source, location, remote policy, date
   discovered, date posted, ATS, eligibility result, fit result, current status,
@@ -159,13 +161,51 @@ No SQLite/DB is built in Phase 1; this only records the requirement.
   is never submitted twice; tracking/logging must not require LLM calls and should be
   concise structured data to minimize token usage.
 
+## Phase 2A architecture & invariants (implemented)
+
+Persistence + domain foundation. Multi-user-CAPABLE schema, single-user LOCAL V1.
+Stack: TypeScript (ESM), PostgreSQL, Drizzle ORM + drizzle-kit migrations, `pg`,
+vitest. Connection comes only from `DATABASE_URL` (tests: `TEST_DATABASE_URL`);
+credentials are never hardcoded.
+
+Layering — keep it strict:
+- `src/db/schema/*` — schema, enums, constraints (database is the source of truth).
+- `src/repositories/*` — the ONLY place Drizzle queries live.
+- `src/domain/*` — pure business logic (state machine, canonical URL); no DB access.
+- `src/cli/*`, `src/seed/*` — call repositories, never write ad-hoc queries.
+
+Invariants future agents MUST preserve:
+- **Jobs are global**; matches, applications, review items, automation settings are
+  user-specific. Never put user-specific eligibility/fit/status/review state on `jobs`.
+- **No duplicate application per (user, job)** — DB unique constraint; likewise one
+  match per (user, job).
+- **Application events are append-only** — the repository exposes insert + read only;
+  never UPDATE or DELETE events.
+- **Status transition + event are atomic** — every transition writes the status
+  change AND a STATUS_CHANGED event in one transaction (row-locked); an invalid
+  transition throws before any write.
+- **`APPLIED` is terminal** — no transition out of it (no restart / double submit).
+- **Automation never enables itself** — reaching the review target only moves
+  approval to `AWAITING_AUTOMATION_APPROVAL`; only an explicit user action sets
+  `automation_enabled = true`.
+- **Swiss review rule cannot be bypassed** by global automation (modeled via review
+  items + review types; enforcement logic lands in a later phase).
+- **Never invent candidate facts**; prefer deterministic logic over LLM calls.
+- Missing source data stays NULL — never invented. Money is `numeric`, not float.
+- Concurrency-safe writes: use atomic SQL (e.g. `count = count + 1`) and row locks,
+  not read-modify-write.
+
+The frontend search profile stays profile-agnostic in code so other profiles can be
+added later as configuration (see the note under "What ApplyPilot is").
+
 ## Project phases
 
-- **Phase 1 (current): Structure + candidate source of truth.** Create the repo
-  skeleton and profile templates. Collect verified candidate data. **No job
-  discovery, APIs, Playwright/browser automation, databases, or LLM calls yet.**
-- **Phase 2+ (not started):** Discovery, dedup, filtering, fit analysis, form
-  filling, tracking, reporting — only after the profile is complete and approved.
-
-Do not begin Phase 2 until the candidate has answered the profile questionnaire and
-the `/profile` files are populated and approved.
+- **Phase 1 (done): Structure + candidate source of truth.** Repo skeleton, profile
+  templates, verified candidate data.
+- **Phase 2A (done): Persistence & domain foundation.** PostgreSQL schema,
+  repositories, application state machine, append-only events, review queue,
+  automation settings, dev CLI, tests, deterministic demo seed. **No discovery,
+  scraping, browser automation, submission, or LLM calls.**
+- **Phase 2B+ (not started):** real job discovery/ingestion, filtering & fit engine,
+  form filling/submission, reporting — deferred. Do not begin without an explicit
+  go-ahead.

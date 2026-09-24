@@ -53,9 +53,15 @@ Only `APPROVED` values may appear in a submitted application.
 
 ## Getting started (Phase 1)
 
-1. Open the four files in `profile/`.
-2. Replace every `NEEDS_USER_INPUT` with a real value and every `NEEDS_REVIEW` with a
-   confirmed one.
+The candidate questionnaire has been applied: search rules, location/remote policy,
+work-authorization policy, salary rules, experience/skills, education, review gates,
+and form answers are now largely `APPROVED`. A few items still need input before
+Phase 2 (see `profile/` for the remaining `NEEDS_USER_INPUT` / `NEEDS_REVIEW` tags):
+personal identifiers in `.env` (LinkedIn/GitHub URLs, phone, current location),
+German level, and a couple of soft-preference/threshold placeholders.
+
+1. Fill remaining `.env` values (copy from `.env.example`).
+2. Resolve the remaining `NEEDS_USER_INPUT` / `NEEDS_REVIEW` tags in `profile/`.
 3. Add resume file(s) to `resumes/`.
 4. Once the profile is complete and approved, Phase 2 (automation) can begin.
 

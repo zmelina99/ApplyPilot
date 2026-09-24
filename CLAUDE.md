@@ -25,6 +25,12 @@ Planned capabilities (NOT all built yet — see "Project phases"):
 Longer term this may be generalized so other candidates can configure it for other
 professions. That is why **no candidate fact may ever be hardcoded in logic**.
 
+The current search profile targets **frontend employment only**. Keep the
+architecture profile-agnostic so separate search profiles (e.g. Solutions Engineer,
+Implementation Engineer, Customer Engineer, Forward-Deployed Engineer) can be added
+later as configuration — but do not implement those profiles now, and they must not
+influence the frontend profile's scoring.
+
 ## Critical rules (non-negotiable)
 
 These rules override convenience, speed, and any instinct to "fill in the blanks."
@@ -88,6 +94,70 @@ into a committed file.
 When the agent hits a `NEEDS_USER_INPUT`, an ambiguous requirement, or a form field
 with no `APPROVED` backing, it must stop on that item, record why, and surface it in
 the daily report / escalation queue rather than answering.
+
+## HARD ELIGIBILITY vs SKILL FIT
+
+Keep these separate (detail + examples in `search-rules.md`):
+
+- **Hard eligibility** is deterministic and may reject: location/remote, work
+  authorization, salary floor, out-of-scope title/seniority, or a skill the posting
+  clearly frames as fundamental/non-negotiable that the candidate lacks.
+- **Skill fit** is a score and never auto-rejects on its own. A missing
+  required-but-not-fundamental technology lowers fit; it does not reject.
+- Years-of-experience requirements are a **fit signal**, not a hard gate (e.g. do not
+  reject a 5+-years posting just because the candidate has 4+).
+
+## Cost / token efficiency (core architectural principle)
+
+ApplyPilot minimizes LLM usage. Priority order for any decision:
+
+1. deterministic code
+2. cached / stored previous decisions
+3. a cheap, small, structured LLM call only when reasoning is genuinely needed
+4. a stronger model only for difficult ambiguity
+5. human escalation when appropriate
+
+These must NOT use an LLM: deduplication, date handling, salary-threshold comparisons,
+deterministic title matching, known location/work-authorization rules, database
+operations, form fields with `APPROVED` exact answers, tracking/logging, and
+application state transitions. Never re-analyze a job with an LLM when a still-valid
+equivalent analysis is already stored. Keep prompts small and structured; send only
+the subset of profile facts a task needs, never the whole profile.
+
+## Human review & automation safety (behavioral rules)
+
+Full rules live in `search-rules.md`; the invariants:
+
+- All autonomous submission is OFF until the candidate explicitly authorizes it.
+- First 20 prepared applications stop before submit for candidate approval; after 20
+  reviewed, enter the hard gate `AWAITING_AUTOMATION_APPROVAL` (no auto-enable).
+- Swiss applications ALWAYS require human approval, even after autonomy is enabled.
+- Exceptional small-startup matches require review; `exceptional_match_threshold` and
+  `small_startup_definition` are unset placeholders — until configured, flag
+  `MANUAL_REVIEW` rather than auto-submit.
+- Never auto-submit when info is missing, an answer needs guessing, authorization or
+  international-hiring eligibility is ambiguous, a mandatory salary input can't be
+  answered by approved rules, a question is unsupported by the profile, a CAPTCHA or
+  login/account-creation is required, or truthfulness is uncertain. Route to review.
+
+## Application tracking (Phase 2 requirement — do NOT implement yet)
+
+Every discovered job must eventually have persistent, auditable lifecycle tracking.
+No SQLite/DB is built in Phase 1; this only records the requirement.
+
+- Track at least: job id, company, title, URL, source, location, remote policy, date
+  discovered, date posted, ATS, eligibility result, fit result, current status,
+  application started, application submitted, last attempt, attempt count, current
+  form/application step, user-input-required flag + reason, failure category, failure
+  details.
+- Planned lifecycle states: DISCOVERED, FILTERED, QUALIFIED, REJECTED_BY_FILTER,
+  QUEUED, APPLYING, NEEDS_USER_INPUT, LOGIN_REQUIRED, CAPTCHA, AUTOMATION_FAILED,
+  MANUAL_REVIEW, READY_FOR_APPROVAL, APPLIED.
+- Plus an append-only application event history.
+- Invariants: failed applications must not disappear; interrupted applications are
+  retryable; items needing user input stay in a review queue; a submitted application
+  is never submitted twice; tracking/logging must not require LLM calls and should be
+  concise structured data to minimize token usage.
 
 ## Project phases
 

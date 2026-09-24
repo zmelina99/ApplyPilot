@@ -15,10 +15,10 @@ written here by the candidate.
 
 ## Summary metrics
 
-- self_reported_total_experience: "4+ years" (candidate's resume summary)  [NEEDS_REVIEW]
-- earliest_professional_dev_role: 2021-07 (ClearMix)  [NEEDS_REVIEW]
-- currently_employed: NEEDS_USER_INPUT   # most recent role ended 2025-12 per resume
-- current_availability / notice: NEEDS_USER_INPUT   # see answers.md
+- total_professional_experience: "4+ years"; integer form (for forms): 4  [APPROVED]
+- earliest_professional_dev_role: 2021-07 (ClearMix)  [APPROVED]
+- currently_employed: NEEDS_USER_INPUT   # not stated; availability is immediate
+- availability_to_start: Immediate  [APPROVED]
 
 ---
 
@@ -87,8 +87,11 @@ system must not present these as engineering experience.
 - Full Stack Developer — Henry Bootcamp (2021-02 – 2021-06), Remote
 - Secondary School Diploma, Bachillerato en Ciencias Sociales —
   Instituto Parroquial Sagrada Familia (2012–2016), Buenos Aires, Argentina
-- highest_degree: NEEDS_USER_INPUT   # confirm whether any university degree exists;
-  none is listed on the resume. Many forms ask "highest degree."
+- highest_degree: No university degree. Highest formal academic education is a
+  Secondary School Diploma (Bachillerato en Ciencias Sociales). Additional
+  professional education: Henry Full Stack Developer Bootcamp. The agent may answer
+  degree questions truthfully with this; never imply the bootcamp is a university
+  degree.  [APPROVED]
 
 ---
 
@@ -108,53 +111,69 @@ Resume-stated proficiency is captured in `resume_level`. The **experience_type**
 **years** fields govern what the system may claim and must be confirmed.
 
 - `experience_type`: `production` | `personal` | `theoretical` | `none`
-- `years`: NEEDS_USER_INPUT everywhere unless the candidate writes a number.
-  Do not infer years from role dates.
+- `years`: a confirmed number, or `NEEDS_USER_INPUT`. Never infer years from role
+  dates.
 
-Drafted `experience_type` values below are marked `[NEEDS_REVIEW]` when a resume
-bullet shows the tech used in a paid role; otherwise `NEEDS_USER_INPUT`.
+`experience_type` values are candidate-confirmed `[APPROVED]`. Only React, TypeScript,
+JavaScript, Next.js, HTML5, and CSS3 have a confirmed `years` (4); all other
+production rows have professional experience approved but no confirmed year count.
 
-| Technology            | resume_level | experience_type            | years            |
-| --------------------- | ------------ | -------------------------- | ---------------- |
-| JavaScript            | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| TypeScript            | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| HTML5                 | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| CSS3                  | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| SCSS                  | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| React.js              | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Redux                 | Advanced     | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Next.js               | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Ionic                 | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Capacitor             | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| D3                    | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Recharts              | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Visx                  | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Git                   | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| GitHub                | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Nx Monorepo           | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Vite                  | Advanced     | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Webpack               | Advanced     | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Xcode                 | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| AI code generation    | Advanced     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Node.js               | Intermediate | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Express               | Intermediate | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Sequelize             | Intermediate | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| PostgreSQL            | Intermediate | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Firebase              | Intermediate | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Supabase              | Intermediate | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Docker                | Intermediate | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Jest                  | Intermediate | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Cypress               | Intermediate | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Storybook             | Intermediate | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Figma                 | Intermediate | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| Android Studio        | Intermediate | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| REST APIs             | Intermediate | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| i18n                  | Intermediate | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Python                | Beginner     | NEEDS_USER_INPUT           | NEEDS_USER_INPUT |
-| FastAPI               | Beginner     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Google Cloud Platform | Beginner     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
-| Kubernetes            | Beginner     | production [NEEDS_REVIEW]   | NEEDS_USER_INPUT |
+| Technology            | resume_level | experience_type       | years            |
+| --------------------- | ------------ | --------------------- | ---------------- |
+| JavaScript            | Advanced     | production [APPROVED]  | 4 [APPROVED]     |
+| TypeScript            | Advanced     | production [APPROVED]  | 4 [APPROVED]     |
+| React.js              | Advanced     | production [APPROVED]  | 4 [APPROVED]     |
+| Next.js               | Advanced     | production [APPROVED]  | 4 [APPROVED]     |
+| HTML5                 | Advanced     | production [APPROVED]  | 4 [APPROVED]     |
+| CSS3                  | Advanced     | production [APPROVED]  | 4 [APPROVED]     |
+| SCSS                  | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Redux                 | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Ionic                 | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Capacitor             | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| D3                    | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Recharts              | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Visx                  | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Git                   | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| GitHub                | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Nx Monorepo           | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Vite                  | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Webpack               | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Xcode                 | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| AI code generation    | Advanced     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Node.js               | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Express               | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Sequelize             | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| PostgreSQL            | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Firebase              | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Supabase              | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Docker                | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Jest                  | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Cypress               | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Storybook             | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Figma                 | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| Android Studio        | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| REST APIs             | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| i18n                  | Intermediate | production [APPROVED]  | NEEDS_USER_INPUT |
+| FastAPI               | Beginner     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Google Cloud Platform | Beginner     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Kubernetes            | Beginner     | production [APPROVED]  | NEEDS_USER_INPUT |
+| Python                | Beginner     | NEEDS_USER_INPUT      | NEEDS_USER_INPUT |
 
-Additional skills not on the resume: NEEDS_USER_INPUT
-(e.g. Vue, Angular, Svelte, Tailwind, GraphQL, Playwright, Vitest, testing-library,
-CI/CD, AWS/Azure — add only if true.)
+Notes:
+- For rows with `production [APPROVED]` but `years: NEEDS_USER_INPUT`, the system may
+  state professional experience but must NOT invent a number of years. If a form
+  requires numeric years for one of these, escalate until a number is added here.
+- Python is used via FastAPI but no standalone level was confirmed — left
+  `NEEDS_USER_INPUT`; do not claim a Python proficiency beyond what is stated.
+
+### No experience — DO NOT CLAIM  [APPROVED]
+
+Candidate confirmed no meaningful experience with these. experience_type: `none`.
+The system must never claim experience, skill, or years for any of them:
+
+- Vue, Angular, Svelte, Tailwind, GraphQL, Playwright, Vitest, Testing Library,
+  AWS, Azure
+
+A job requiring one of these affects **skill fit** only — it is not a hard
+eligibility reject unless the job clearly presents it as fundamental/non-negotiable
+(see search-rules.md: HARD ELIGIBILITY vs SKILL FIT).

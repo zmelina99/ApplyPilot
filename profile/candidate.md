@@ -36,20 +36,25 @@ Status tags apply to the value in `.env` (or inline):
     but does not state current residence. Do not assume.
 - current_country: ${CANDIDATE_CURRENT_COUNTRY}  [NEEDS_USER_INPUT]
 - timezone: ${CANDIDATE_TIMEZONE}  [NEEDS_USER_INPUT]
-- open_to_relocation: NEEDS_USER_INPUT   # see search-rules.md for target locations
+- open_to_relocation: Open to discussion — not committed  [APPROVED]   # see search-rules.md
+- availability_to_start: Immediate  [APPROVED]
 
 ## Work authorization
 
-Do not infer authorization from nationality. State it explicitly per region.
-(Kept inline — not a personal identifier.)
+Confirmed eligibility policy. Do not infer legal authorization from nationality;
+these are the candidate's approved filtering rules (reject logic in search-rules.md).
 
-- authorized_switzerland: NEEDS_USER_INPUT
-- authorized_eu: NEEDS_USER_INPUT
-- authorized_uk: NEEDS_USER_INPUT
-- authorized_us: NEEDS_USER_INPUT
-- authorized_argentina: NEEDS_USER_INPUT
-- requires_visa_sponsorship: NEEDS_USER_INPUT   # per region; note exceptions below
-- work_auth_notes: NEEDS_USER_INPUT
+- eligible_europe: Yes — no sponsorship concern  [APPROVED]
+- eligible_switzerland: Yes — no sponsorship concern  [APPROVED]
+- eligible_argentina: Yes — no sponsorship concern  [APPROVED]
+- united_kingdom: Treated separately from Europe — eligible only via international
+  arrangements (EOR, contractor, freelance) with no UK work authorization/residency
+  required  [APPROVED]
+- outside_europe_ch_ar: Hireable only via international remote arrangements (EOR,
+  contractor, freelance) that require no local work authorization/residency  [APPROVED]
+- reject_if: role requires local work authorization/residency (e.g. US/Canada/UK) and
+  offers no international hiring route  [APPROVED]
+- if_international_eligibility_ambiguous: do not assume — flag for review  [APPROVED]
 
 ## Languages
 
@@ -85,7 +90,6 @@ Verified summary as written by the candidate on the resume [NEEDS_REVIEW]:
 > teams where technical decisions have direct business impact.
 
 - headline_current: Full-Stack Engineer (Frontend Lead)  [NEEDS_REVIEW]
-- headline_target: NEEDS_USER_INPUT
-  - note: The stated goal is to keep applying to Frontend Engineer roles now while
-    transitioning toward Solutions / Implementation Engineering. Confirm the headline
-    ApplyPilot should present for the current frontend search.
+- headline_target: Frontend Engineer  [APPROVED]
+  - note: Headline ApplyPilot presents for the current frontend search. Historical
+    role titles in experience.md are unchanged and must not be rewritten.

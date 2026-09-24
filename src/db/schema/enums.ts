@@ -58,6 +58,10 @@ export const fitStatusEnum = pgEnum('fit_status', [
   'STRONG',
   'MODERATE',
   'WEAK',
+  // Phase 2C semantic-fit bands (STRONG reused):
+  'GOOD',
+  'BORDERLINE',
+  'POOR',
 ]);
 
 // --- Application (one user's attempt to apply to one job) ---

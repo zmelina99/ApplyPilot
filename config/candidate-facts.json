@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "description": "Compact, machine-readable representation of the candidate's VERIFIED facts for semantic fit analysis. Derived ONLY from the approved profile (profile/experience.md, profile/candidate.md, profile/search-rules.md). Contains no personal identifiers (those stay in .env). Never add experience, technologies, or years not backed by the approved profile. Bump profileVersion whenever these facts change — it is part of the analysis cache key.",
+    "derivedFrom": "profile/experience.md, profile/candidate.md, profile/search-rules.md",
+    "profileVersion": "2c-1"
+  },
+  "targetTitles": [
+    "Frontend Engineer",
+    "Frontend Developer",
+    "Senior Frontend Engineer",
+    "React Engineer",
+    "React Developer",
+    "Software Engineer - Frontend",
+    "UI Engineer",
+    "Web Engineer",
+    "Web Developer",
+    "frontend-heavy Product Engineer",
+    "frontend-heavy Full-Stack Engineer",
+    "hands-on Frontend Lead / Tech Lead"
+  ],
+  "totalYearsExperience": 4,
+  "totalExperienceHuman": "4+ years professional software engineering",
+  "coreTechnologies": [
+    { "name": "React", "years": 4 },
+    { "name": "TypeScript", "years": 4 },
+    { "name": "JavaScript", "years": 4 },
+    { "name": "Next.js", "years": 4 },
+    { "name": "HTML/CSS", "years": 4 }
+  ],
+  "professionalTechnologies": [
+    "Redux", "SCSS", "Ionic", "Capacitor", "D3", "Recharts", "Visx",
+    "Vite", "Webpack", "Nx Monorepo", "Git", "GitHub", "Xcode",
+    "AI-assisted development", "Node.js", "Express", "Sequelize",
+    "PostgreSQL", "Firebase", "Supabase", "Storybook", "Figma", "Jest",
+    "Cypress", "REST APIs", "i18n", "Docker", "Android Studio"
+  ],
+  "limitedExperience": ["Python", "FastAPI", "Google Cloud Platform", "Kubernetes"],
+  "noExperience": [
+    "Vue", "Angular", "Svelte", "Tailwind", "GraphQL", "Playwright",
+    "Vitest", "Testing Library", "AWS", "Azure"
+  ],
+  "domainStrengths": [
+    "frontend architecture",
+    "component/design systems and whitelabeling",
+    "data visualization (D3/Recharts/Visx)",
+    "cross-platform web + mobile (Ionic/Capacitor)",
+    "accessibility (WCAG)",
+    "testing practices (Jest/Cypress)",
+    "cross-functional collaboration with design and backend",
+    "grew from individual contributor to frontend/technical lead"
+  ],
+  "education": {
+    "universityDegree": false,
+    "highest": "Secondary School Diploma / Bachillerato en Ciencias Sociales",
+    "additional": "Henry Full Stack Developer Bootcamp"
+  },
+  "availability": "immediate"
+}

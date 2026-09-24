@@ -48,6 +48,13 @@ export const jobMatches = pgTable(
     evaluationDetails: jsonb('evaluation_details'),
     evaluatedAt: timestamp('evaluated_at', { withTimezone: true }),
     evaluationVersion: text('evaluation_version'),
+    // Phase 2C semantic fit analysis. fit_score/fit_status columns above hold the
+    // headline result; the full structured analysis + provenance live here.
+    fitAnalysis: jsonb('fit_analysis'),
+    fitAnalysisHash: text('fit_analysis_hash'),
+    fitAnalyzedAt: timestamp('fit_analyzed_at', { withTimezone: true }),
+    fitModel: text('fit_model'),
+    fitPromptVersion: text('fit_prompt_version'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

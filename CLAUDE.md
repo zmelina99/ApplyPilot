@@ -226,17 +226,62 @@ stops at the shortlist — it never creates applications.
 - Match mapping: ELIGIBLE→(status QUALIFIED, eligibility ELIGIBLE);
   INELIGIBLE→(REJECTED, INELIGIBLE); NEEDS_REVIEW→(PENDING, AMBIGUOUS).
 
+## Phase 2C architecture & invariants (implemented)
+
+Semantic fit analysis turns the deterministic shortlist into a ranked, explainable
+list. Flow: discover → deterministic hard filters → deterministic salary extraction →
+semantic fit analysis (LLM) → cache → rank → shortlist. Still no application
+submission.
+
+Philosophy — **permissive about whether a job is worth trying; strict about the truth
+of what we say to an employer.** Separate three things and only the first blocks a job:
+- **CLEAR HARD BLOCKER** (explicit US-residents-only / must-reside / clearly onsite
+  outside Valencia-CH / clearly below floor / junior / unrelated profession) → block.
+- **UNCERTAINTY** (a country list with no stated restriction, unknown hiring policy) →
+  do NOT block; record it and still run fit analysis; surface it on the shortlist.
+- **FIT CONCERN** → affects ranking, never eligibility.
+
+Invariants future agents MUST preserve:
+- **Never send deterministic rejects to the LLM.** Only ELIGIBLE + non-blocking
+  AMBIGUOUS matches are analyzed. Never ask the LLM what deterministic code can answer.
+- **The LLM never invents.** It uses only `config/candidate-facts.json` (verified
+  facts, no PII, derived from the approved profile) and actual job content. It must
+  not claim experience, technologies, years, or an employer hiring policy not present.
+  `noExperience` techs are never strengths.
+- **Fit ≠ eligibility.** A job may be ELIGIBLE + STRONG FIT + geographic uncertainty and
+  still rank high. Fit never overrides a real hard blocker; uncertain geography is
+  never a fake hard blocker.
+- **Overall fit score is computed, not invented.** The model returns four component
+  scores (role 30 / technical 30 / experience 20 / responsibility 20) + evidence; we
+  compute the weighted score. Geography and salary are NOT fit components.
+- **Validated structured output.** Model output is validated (zod); malformed output
+  fails safe (counted, never persisted).
+- **Caching.** Analysis is keyed by `profileVersion + promptVersion + scoringVersion +
+  normalized job content`. Unchanged re-runs make ~0 LLM calls. Bump a version to
+  invalidate.
+- **Cost discipline.** deterministic → cached → cheap structured LLM → stronger model →
+  human. Keep prompts compact (send the compact candidate object + cleaned job, never
+  the Markdown profile).
+- **Salary extraction is conservative.** High-confidence EUR/CHF/USD/GBP annual only,
+  with a salary/annual signal; never guess currency, convert, or treat OTE/equity as
+  base. Ambiguous → unknown (not a negative signal, never a false reject).
+- **Non-blocking ambiguity does not create blocking reviews.** It stays on the match
+  and flows into fit analysis as uncertainties. Blocking reviews are reserved for
+  genuine human decisions; human decisions persist across runs (a resolved review is
+  not recreated unless the job content materially changed).
+- **Ranking** is by fit, then freshness, then confidence — never by company fame, and
+  missing salary never lowers rank.
+- **Credentials from env only** (`ANTHROPIC_API_KEY`); never hardcoded/committed.
+  Without a key, everything except the real analysis works (dry-run included).
+
 ## Project phases
 
-- **Phase 1 (done): Structure + candidate source of truth.** Repo skeleton, profile
-  templates, verified candidate data.
-- **Phase 2A (done): Persistence & domain foundation.** PostgreSQL schema,
-  repositories, application state machine, append-only events, review queue,
-  automation settings, dev CLI, tests, deterministic demo seed.
-- **Phase 2B (done): Real discovery & deterministic eligibility.** Source adapters,
-  normalization, dedup/ingestion, deterministic eligibility engine, review routing,
-  `discover`/`shortlist`/`rejected`/`review`/`job` CLI, tests + a real live run.
-  Stops at the shortlist — no applications created.
-- **Phase 2C+ (not started):** LLM/semantic fit scoring, application form filling,
-  browser automation, submission, cover letters, reporting — deferred. Do not begin
-  without an explicit go-ahead.
+- **Phase 1 (done): Structure + candidate source of truth.**
+- **Phase 2A (done): Persistence & domain foundation.**
+- **Phase 2B (done): Real discovery & deterministic eligibility.**
+- **Phase 2C (done): Semantic fit analysis + ranked shortlist.** Candidate-facts
+  config, deterministic salary parser, provider-agnostic FitAnalyzer (Anthropic +
+  fake), validated/cached analysis, review-handling change, `analyze` CLI, ranked
+  `shortlist`, tests. Stops at the ranked shortlist — no applications created.
+- **Phase 2D+ (not started):** application form filling, browser automation,
+  submission, cover letters, reporting. Do not begin without an explicit go-ahead.

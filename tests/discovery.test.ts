@@ -78,20 +78,20 @@ describe('discovery pipeline (fake adapter, no network)', () => {
     expect(s1.eligible).toBe(1);
     expect(s1.rejected).toBe(1);
     expect(s1.needsReview).toBe(1);
-    expect(s1.reviewItemsCreated).toBe(1);
 
     const user = await usersRepo.getFirstUser(handle.db);
     expect(await jobsRepo.listJobs(handle.db)).toHaveLength(3);
     expect(await matchesRepo.listMatchesForUser(handle.db, user!.id)).toHaveLength(3);
-    expect(await reviewsRepo.listUnresolvedReviews(handle.db, user!.id)).toHaveLength(1);
+    // Phase 2C: discovery no longer creates blocking review items for non-blocking
+    // ambiguity — the ambiguity stays on the match and feeds fit analysis.
+    expect(await reviewsRepo.listUnresolvedReviews(handle.db, user!.id)).toHaveLength(0);
 
-    // Second run: nothing new, no duplicate jobs/matches/review items.
+    // Second run: nothing new, still no review items, no duplicate jobs/matches.
     const s2 = await runDiscovery(handle.db, { adapters, config: cfg });
     expect(s2.newJobs).toBe(0);
     expect(s2.existingJobs).toBe(3);
-    expect(s2.reviewItemsCreated).toBe(0);
     expect(await jobsRepo.listJobs(handle.db)).toHaveLength(3);
-    expect(await reviewsRepo.listUnresolvedReviews(handle.db, user!.id)).toHaveLength(1);
+    expect(await reviewsRepo.listUnresolvedReviews(handle.db, user!.id)).toHaveLength(0);
   });
 
   it('does not duplicate the same source job seen twice in one run', async () => {

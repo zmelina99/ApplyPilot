@@ -1,0 +1,8 @@
+# Personal data — NEVER commit (repo is public)
+.env
+
+# Local Claude Code settings (per-machine, not shared)
+.claude/settings.local.json
+
+# OS cruft
+.DS_Store

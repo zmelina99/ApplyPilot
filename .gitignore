@@ -5,6 +5,8 @@
 # Node / TypeScript build artifacts
 node_modules/
 dist/
+web/dist/
+.vite/
 *.tsbuildinfo
 
 # Local Claude Code settings (per-machine, not shared)

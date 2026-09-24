@@ -4,7 +4,7 @@
   "description": "ApplyPilot — persistence & domain foundation (Phase 2A)",
   "main": "index.js",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p web/tsconfig.json",
     "db:setup": "bash scripts/setup-local-db.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
@@ -14,7 +14,12 @@
     "analyze": "tsx src/cli/index.ts analyze",
     "shortlist": "tsx src/cli/index.ts shortlist",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "api": "tsx watch src/server/index.ts",
+    "web": "vite --config web/vite.config.ts",
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run api\" \"npm run web\"",
+    "build": "vite build --config web/vite.config.ts",
+    "start": "tsx src/server/index.ts"
   },
   "keywords": [],
   "author": "",
@@ -23,17 +28,33 @@
   "private": true,
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
+    "cors": "^2.8.6",
     "dotenv": "^18.0.3",
     "drizzle-orm": "^0.45.3",
+    "express": "^5.2.1",
     "pg": "^8.23.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-router-dom": "^7.18.4",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^26.6.2",
     "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^9.2.4",
     "drizzle-kit": "^0.31.11",
+    "jsdom": "^29.1.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
+    "vite": "^8.3.1",
     "vitest": "^4.1.11"
   }
 }

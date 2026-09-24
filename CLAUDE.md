@@ -283,5 +283,14 @@ Invariants future agents MUST preserve:
   config, deterministic salary parser, provider-agnostic FitAnalyzer (Anthropic +
   fake), validated/cached analysis, review-handling change, `analyze` CLI, ranked
   `shortlist`, tests. Stops at the ranked shortlist — no applications created.
+- **Phase 2C.5 (done): Local web UI.** React (Vite) client in `web/` + a thin Express
+  API (`src/server/`, run via tsx) that reuses the existing repositories. Pages:
+  Dashboard, Jobs, Job detail, Applications, Application detail, Review. Read-oriented
+  + existing review actions only. Invariants: the UI reuses the repository/domain
+  layer through one server data-access boundary (`src/server/queries.ts`) — never a
+  second data model, never PostgreSQL from React; it renders the backend's real
+  enums/state machine; it makes NO LLM calls and shows "Not analyzed" (never a fake
+  score) without a key; non-blocking uncertainty stays on job details, out of the
+  blocking review queue. No application automation/submission.
 - **Phase 2D+ (not started):** application form filling, browser automation,
   submission, cover letters, reporting. Do not begin without an explicit go-ahead.

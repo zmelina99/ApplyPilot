@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "description": "Machine-readable, AUTHORITATIVE search configuration for ApplyPilot's deterministic eligibility engine. Derived from the human-readable, APPROVED rules in profile/search-rules.md. If the two ever diverge, this file governs the engine; keep it in sync with the profile docs (see profile/search-rules.md note).",
+    "derivedFrom": "profile/search-rules.md",
+    "version": "2b-1"
+  },
+  "role": {
+    "frontendKeywords": [
+      "frontend", "front-end", "front end", "react", "react.js", "reactjs",
+      "next.js", "nextjs", "vue", "angular", "svelte", "ui engineer",
+      "ui developer", "user interface", "web developer", "web engineer",
+      "javascript", "typescript", "ionic"
+    ],
+    "adjacentTitleKeywords": [
+      "full-stack", "full stack", "fullstack", "software engineer",
+      "software developer", "product engineer", "web developer", "web engineer"
+    ],
+    "outOfScopeTitleKeywords": [
+      "backend", "back-end", "back end", "data engineer", "data scientist",
+      "machine learning", "ml engineer", "devops", "site reliability", "sre",
+      "security engineer", "qa engineer", "quality assurance", "test engineer",
+      "designer", "ux designer", "ui/ux designer", "product designer",
+      "graphic designer", "android developer", "ios developer",
+      "mobile developer", "salesforce", "account executive", "recruiter",
+      "content", "marketing", "customer support"
+    ],
+    "managementTitleKeywords": [
+      "engineering manager", "director", "head of", "vp ", "vp of",
+      "vice president", "people manager"
+    ],
+    "leadAllowedKeywords": [
+      "frontend lead", "front-end lead", "lead frontend", "lead front-end",
+      "frontend tech lead", "tech lead", "lead engineer"
+    ],
+    "juniorTitleKeywords": [
+      "junior", "jr.", "jr ", "intern", "internship", "working student",
+      "werkstudent", "apprentice", "apprenticeship", "trainee", "graduate",
+      "entry level", "entry-level", "praktikum", "praktikant"
+    ],
+    "reviewSeniorityKeywords": ["staff engineer", "staff frontend", "staff software"],
+    "excludeSeniorityKeywords": ["principal"]
+  },
+  "freshness": {
+    "maxAgeDays": 14,
+    "priorityHours": 72
+  },
+  "location": {
+    "onsiteAllowedCities": ["valencia"],
+    "switzerlandTokens": ["switzerland", "schweiz", "suisse", "svizzera", "zurich", "zürich", "geneva", "genève", "basel", "bern", "lausanne", "lugano", "ticino"],
+    "internationalRemoteSignals": ["worldwide", "anywhere", "work from anywhere", "anywhere in the world", "remote worldwide", "global remote", "any location"],
+    "europeRemoteSignals": ["europe", "european", "emea", "eu", "eea", "cet", "european union"],
+    "europeCountryTokens": [
+      "austria", "belgium", "bulgaria", "croatia", "cyprus", "czech", "czechia",
+      "denmark", "estonia", "finland", "france", "germany", "greece", "hungary",
+      "ireland", "italy", "latvia", "lithuania", "luxembourg", "malta",
+      "netherlands", "poland", "portugal", "romania", "slovakia", "slovenia",
+      "spain", "sweden", "norway", "iceland", "liechtenstein"
+    ],
+    "europeCityTokens": [
+      "berlin", "munich", "münchen", "hamburg", "frankfurt", "cologne", "köln",
+      "stuttgart", "düsseldorf", "leipzig", "paris", "lyon", "madrid", "barcelona",
+      "valencia", "amsterdam", "rotterdam", "lisbon", "lisboa", "porto", "dublin",
+      "vienna", "wien", "warsaw", "warszawa", "krakow", "kraków", "prague", "praha",
+      "stockholm", "copenhagen", "københavn", "helsinki", "oslo", "milan", "milano",
+      "rome", "roma", "athens", "budapest", "bucharest", "sofia", "tallinn", "riga",
+      "vilnius", "brussels", "bruxelles", "luxembourg city"
+    ],
+    "argentinaTokens": ["argentina", "buenos aires"],
+    "ukTokens": ["united kingdom", " uk", "uk ", "u.k.", "england", "scotland", "wales", "london", "manchester", "britain"],
+    "outsideResidencySignals": [
+      "us only", "u.s. only", "usa only", "united states only", "must reside",
+      "must be located in", "must be based in", "must live in",
+      "work authorization required", "work authorisation required",
+      "authorized to work in the us", "authorised to work in the",
+      "us work authorization", "us-based only", "based in the us",
+      "canada only", "must be a us citizen", "requires us residency",
+      "requires residency", "eligible to work in the united states",
+      "right to work in the", "must have the right to work",
+      "legally authorized to work in", "located in the united states"
+    ],
+    "northAmericaTokens": ["united states", "usa", "u.s.", " us ", "us-", "u.s ", "america", "canada", "canadian"]
+  },
+  "salary": {
+    "comparableCurrencies": ["EUR", "CHF"],
+    "floors": { "EUR": 50000, "CHF": 85000 },
+    "targets": { "EUR": 60000, "CHF": 100000 },
+    "swissCurrency": "CHF"
+  },
+  "seniority": {
+    "candidateYears": 4
+  }
+}

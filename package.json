@@ -9,6 +9,8 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/seed/demo.ts",
     "cli": "tsx src/cli/index.ts",
+    "discover": "tsx src/cli/index.ts discover",
+    "shortlist": "tsx src/cli/index.ts shortlist",
     "test": "vitest run",
     "test:watch": "vitest"
   },

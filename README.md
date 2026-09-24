@@ -5,9 +5,11 @@ roles, filters them against the candidate's rules, analyzes fit, and (eventually
 applies — using **only verified candidate information** and escalating anything it
 cannot answer confidently.
 
-> **Status: Phase 2A — persistence & domain foundation.** The candidate source of
-> truth (Phase 1) and the PostgreSQL/Drizzle data layer are in place. No job
-> discovery, scraping, browser automation, submission, or LLM calls yet.
+> **Status: Phase 2B — real discovery & deterministic eligibility.** ApplyPilot now
+> pulls real current job postings from public APIs, stores/deduplicates them in
+> PostgreSQL, applies deterministic eligibility rules, and produces an inspectable
+> shortlist — all with **zero LLM calls**. No browser automation, scraping around
+> anti-bot systems, or application submission; Phase 2B stops at the shortlist.
 >
 > **Architecture principle:** multi-user-CAPABLE schema, single-user LOCAL V1. The
 > data model supports many users from the start so a future hosted product needs no
@@ -40,15 +42,20 @@ apply-pilot/
 ├── docker-compose.yml   # Minimal local PostgreSQL (dev only)
 ├── drizzle.config.ts    # drizzle-kit config (schema → migrations)
 ├── drizzle/             # Generated SQL migrations (committed)
+├── config/
+│   └── search-profile.json  # Machine-authoritative search config (from search-rules.md)
 ├── profile/             # Candidate source of truth (data, not logic)
 │   ├── candidate.md     # Identity, contact, location, work auth, languages, links
 │   ├── experience.md    # Authoritative record of experience & skill levels
 │   ├── search-rules.md  # What jobs to pursue / reject; auto-apply criteria
 │   └── answers.md       # Reusable, status-tagged answer bank for forms
 ├── src/
-│   ├── config/env.ts    # DATABASE_URL / TEST_DATABASE_URL access (no hardcoding)
+│   ├── config/          # env.ts (DATABASE_URL) + searchConfig.ts (search-profile loader)
 │   ├── db/              # Drizzle client, schema (schema/*), migration runner
 │   ├── domain/          # Pure logic: application state machine, canonical URL
+│   ├── sources/         # JobSourceAdapter boundary + Remotive/Arbeitnow/Jobicy
+│   ├── eligibility/     # Deterministic eligibility engine (no LLM)
+│   ├── pipeline/        # discover.ts — end-to-end discovery orchestration
 │   ├── repositories/    # The ONLY place DB queries live (one module per entity)
 │   ├── seed/demo.ts     # Deterministic fictional demo (no LLM, no real data)
 │   ├── cli/index.ts     # Developer inspection CLI (not the product UI)
@@ -189,8 +196,60 @@ back to the dev DB). Covers migrations, multi-user isolation, dedup, unique
 constraints, the state machine (valid/invalid/terminal), transition↔event atomicity,
 append-only enforcement, review queue, and the automation invariants.
 
-## Roadmap (Phase 2B+, deferred)
+## Phase 2B — real discovery & deterministic eligibility
 
-Real job discovery/ingestion, ATS/job-board integrations, the filtering & fit engine,
-browser automation and form submission, cover-letter generation, reporting, and any
-hosted-product infrastructure. None of it is built yet.
+Pull real current postings, dedup them, apply deterministic rules, inspect a
+shortlist. No LLM, no browser automation, no submission.
+
+```bash
+npm run discover      # fetch → normalize → dedup/store → deterministic eligibility
+npm run shortlist     # eligible jobs (priority <=72h, then newest)
+npm run cli -- review    # jobs needing human review (ambiguous)
+npm run cli -- rejected  # rejected jobs grouped by reason
+npm run cli -- job <id>  # one job + its sources + match result
+```
+
+### Sources
+
+Pluggable via the `JobSourceAdapter` boundary (`src/sources/`) — the pipeline depends
+only on the interface, never on a specific board. MVP sources, all legitimate public
+JSON APIs (honest User-Agent, no anti-bot bypass, no auth):
+
+- **Remotive** — global remote software roles (`candidate_required_location` gives a
+  clean geo signal).
+- **Arbeitnow** — European coverage incl. on-site/hybrid (exercises the location
+  rules) and visa flags.
+- **Jobicy** (`tag=react`) — remote frontend roles with geo + seniority signals
+  (Europe / LATAM / worldwide).
+
+### Ingestion & normalization
+
+Each adapter returns `NormalizedJobCandidate[]` mapped to the `jobs` schema. Missing
+fields stay `NULL` (never invented); free-text/foreign-currency salary is not parsed
+or converted. Jobs are global and deduped by canonical URL; a posting found via
+several sources becomes one job with multiple `job_sources`. Runs are idempotent.
+
+### Deterministic eligibility
+
+`src/eligibility/` reads the machine config `config/search-profile.json` (derived
+from, and kept in sync with, `profile/search-rules.md`) and produces one of
+**ELIGIBLE / INELIGIBLE / NEEDS_REVIEW** with structured reason codes:
+
+- **Role/title:** frontend & frontend-heavy adjacent roles qualify; backend/data/QA/
+  design/junior/pure-management are rejected; Staff and unclear scopes → review.
+- **Freshness:** > 14 days → rejected; <=72h flagged priority; missing date never
+  rejects on its own.
+- **Location/work-auth:** Valencia & Switzerland (any mode) and remote
+  Europe/worldwide qualify; explicit local-residency/US/Canada/UK-auth requirements
+  are rejected; unclear international hiring → review.
+- **Salary:** clearly-below-floor EUR/CHF annual → rejected; missing salary never
+  rejects; foreign currency/ambiguous period is not guessed.
+
+This is **hard eligibility only** — `fit_score` stays NULL until Phase 2C. Ambiguous
+cases create a (deduped) review item rather than being dropped. No LLM is used.
+
+## Roadmap (Phase 2C+, deferred)
+
+Semantic/LLM fit scoring, application form filling, browser automation and
+submission, cover-letter generation, reporting, and any hosted-product
+infrastructure. None of it is built yet.

@@ -44,6 +44,49 @@ export async function listUnresolvedReviews(
     .orderBy(desc(reviewItems.createdAt));
 }
 
+/**
+ * Find an existing OPEN review item for a (user, job, reviewType). Used to keep
+ * repeated discovery runs from creating duplicate review items.
+ */
+export async function findOpenReviewForJob(
+  exec: Exec,
+  userId: string,
+  jobId: string,
+  reviewType: NewReviewItem['reviewType'],
+): Promise<ReviewItem | null> {
+  const [row] = await exec
+    .select()
+    .from(reviewItems)
+    .where(
+      and(
+        eq(reviewItems.userId, userId),
+        eq(reviewItems.jobId, jobId),
+        eq(reviewItems.reviewType, reviewType),
+        eq(reviewItems.status, 'OPEN'),
+      ),
+    )
+    .limit(1);
+  return row ?? null;
+}
+
+/** Create a review item only if no matching OPEN one exists (idempotent). */
+export async function createReviewIfAbsent(
+  db: Database,
+  input: CreateReviewInput,
+): Promise<{ created: boolean; item: ReviewItem }> {
+  if (input.jobId) {
+    const existing = await findOpenReviewForJob(
+      db,
+      input.userId,
+      input.jobId,
+      input.reviewType,
+    );
+    if (existing) return { created: false, item: existing };
+  }
+  const item = await createReviewItem(db, input);
+  return { created: true, item };
+}
+
 export async function getReviewItem(
   exec: Exec,
   id: string,

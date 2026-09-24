@@ -1,7 +1,8 @@
-import { and, eq, desc } from 'drizzle-orm';
+import { and, eq, desc, inArray } from 'drizzle-orm';
 import type { Database, Exec } from '../db/client.js';
-import { jobMatches } from '../db/schema/index.js';
+import { jobMatches, jobs } from '../db/schema/index.js';
 import type { JobMatch } from '../db/schema/jobMatches.js';
+import type { Job } from '../db/schema/jobs.js';
 import { NotFoundError } from '../domain/errors.js';
 
 /**
@@ -46,6 +47,7 @@ export interface EvaluationInput {
   fitStatus?: JobMatch['fitStatus'];
   fitScore?: number | null;
   fitReason?: string | null;
+  evaluationDetails?: unknown;
   evaluationVersion?: string | null;
 }
 
@@ -58,13 +60,43 @@ export async function updateEvaluation(
   matchId: string,
   input: EvaluationInput,
 ): Promise<JobMatch> {
+  const { evaluationDetails, ...rest } = input;
   const [row] = await db
     .update(jobMatches)
-    .set({ ...input, evaluatedAt: new Date(), updatedAt: new Date() })
+    .set({
+      ...rest,
+      ...(evaluationDetails !== undefined
+        ? { evaluationDetails: evaluationDetails as JobMatch['evaluationDetails'] }
+        : {}),
+      evaluatedAt: new Date(),
+      updatedAt: new Date(),
+    })
     .where(eq(jobMatches.id, matchId))
     .returning();
   if (!row) throw new NotFoundError('JobMatch', matchId);
   return row;
+}
+
+export interface MatchWithJob {
+  match: JobMatch;
+  job: Job;
+}
+
+/** Matches for a user in the given match statuses, joined with their job. */
+export async function listMatchesWithJobs(
+  exec: Exec,
+  userId: string,
+  statuses: JobMatch['status'][],
+  limit = 300,
+): Promise<MatchWithJob[]> {
+  if (statuses.length === 0) return [];
+  const rows = await exec
+    .select({ match: jobMatches, job: jobs })
+    .from(jobMatches)
+    .innerJoin(jobs, eq(jobMatches.jobId, jobs.id))
+    .where(and(eq(jobMatches.userId, userId), inArray(jobMatches.status, statuses)))
+    .limit(limit);
+  return rows;
 }
 
 export async function listMatchesForUser(

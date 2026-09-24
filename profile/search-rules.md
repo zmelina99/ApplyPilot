@@ -5,6 +5,13 @@ rules first; LLM judgment only where noted. Most values below are `[APPROVED]`.
 
 Status: `APPROVED` = confirmed; `NEEDS_USER_INPUT` = still to provide.
 
+> **Authoritative machine config:** this document is the human-readable source of
+> truth for the search policy. The deterministic engine (Phase 2B) consumes a
+> machine-readable projection of these rules at `config/search-profile.json`, which
+> is **derived from this file**. When the policy changes, update this document and
+> then update `config/search-profile.json` to match — they must not diverge, and the
+> JSON is what the code reads.
+
 ---
 
 ## Primary goal

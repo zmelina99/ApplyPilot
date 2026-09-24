@@ -1,16 +1,19 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  plugins: [react()],
   test: {
-    // Tests share ONE PostgreSQL test database, so files must not run in parallel
-    // (each file truncates between tests; concurrent files would clobber each other).
-    // The schema is migrated once up front by globalSetup.
+    // Backend tests share ONE PostgreSQL test database, so files must not run in
+    // parallel. The schema is migrated once up front by globalSetup.
     fileParallelism: false,
     sequence: { concurrent: false },
-    // Clean + migrate the shared test DB exactly once, before any file runs.
     globalSetup: ['./tests/globalSetup.ts'],
+    setupFiles: ['./tests/vitest.setup.ts'],
     testTimeout: 30_000,
     hookTimeout: 30_000,
-    include: ['tests/**/*.test.ts'],
+    // Node by default (DB tests); React component tests opt into jsdom per-file with
+    // `// @vitest-environment jsdom`.
+    include: ['tests/**/*.test.ts', 'web/**/*.test.tsx'],
   },
 });

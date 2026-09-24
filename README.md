@@ -5,13 +5,17 @@ roles, filters them against the candidate's rules, analyzes fit, and (eventually
 applies — using **only verified candidate information** and escalating anything it
 cannot answer confidently.
 
-> **Status: Phase 2C — semantic fit analysis & ranked shortlist.** On top of real
-> discovery + deterministic eligibility, ApplyPilot now scores how well each eligible
-> (or non-blocking-ambiguous) job matches the candidate's *verified* experience,
-> caches the result, and produces a ranked, explainable shortlist of jobs worth
-> applying to. Fit analysis uses an LLM (Anthropic) gated on `ANTHROPIC_API_KEY`;
-> everything else is deterministic. No application submission — Phase 2C stops at the
-> ranked shortlist.
+> **Status: Phase 2C.5 — local web UI.** ApplyPilot now has a polished local web app
+> (React + Vite, served by a thin Express API that reuses the existing repositories)
+> for reviewing discovered jobs, understanding why they match, seeing uncertainty, and
+> tracking applications. It runs with `npm run dev` and works fully **without** an
+> LLM key (unanalyzed jobs simply show "Not analyzed" — never a fake score). This
+> phase is UI + read-oriented management only: no application automation/submission.
+>
+> Underlying it (Phase 2C): semantic fit analysis scores how well each eligible (or
+> non-blocking-ambiguous) job matches the candidate's *verified* experience, caches
+> the result, and ranks a shortlist. Fit analysis uses an LLM (Anthropic) gated on
+> `ANTHROPIC_API_KEY`; everything else is deterministic.
 >
 > **Philosophy:** *permissive about whether a job is worth trying; strict about the
 > truth of what we say to an employer.* Only a clear hard blocker stops a job;
@@ -323,6 +327,65 @@ signal). It never guesses currency, converts, or treats OTE/equity as base. Ambi
 **Ranking.** Fit score first, then freshness (≤72h, newest), then confidence — never
 company fame; missing salary never lowers rank. Geographic uncertainty is shown
 prominently but doesn't sink a strong match.
+
+## Phase 2C.5 — local web UI
+
+A polished, desktop-first React app for actually using ApplyPilot. It reuses the
+existing repositories/domain via a thin Express API (`src/server/`) — a single
+data-access boundary; the UI never queries PostgreSQL directly. React client lives in
+`web/`.
+
+**Why this stack (not Next.js):** the backend is `moduleResolution: NodeNext` with
+`.js` import specifiers and native `pg`; it runs cleanly under `tsx` but not through a
+web bundler without resolver hacks. A `tsx`-run Express API reuses the exact
+repository layer in its native runtime; Vite gives a fast React client. One command
+starts both.
+
+### Prerequisites & start
+
+```bash
+# PostgreSQL running + migrations applied (same as earlier phases)
+brew services start postgresql@14   # or: docker compose up -d
+npm install
+npm run db:migrate
+
+# Get some data first (if the DB is empty)
+npm run discover                    # real jobs → eligibility + salary
+npm run analyze                     # optional: fit scores (needs ANTHROPIC_API_KEY)
+
+# Start the web app (API on :4000, Vite UI on :5173)
+npm run dev
+# → open http://localhost:5173
+```
+
+`DATABASE_URL` (from `.env`) is the only connection config. A production build is
+`npm run build` (outputs `web/dist`); `npm start` then serves the built UI + API on
+`http://localhost:4000` single-process.
+
+### Pages
+
+- **Dashboard** — real aggregate counts (discovered / eligible / needs-review /
+  rejected / fit-analyzed / strong matches / applications), best matches, recent
+  discoveries, and a "needs your attention" queue. With no LLM key it shows
+  *"N jobs are awaiting semantic fit analysis"* instead of any invented score.
+- **Jobs** — filterable, sortable, searchable table (eligibility, fit, source,
+  freshness, application status; sort by fit/newest/oldest/company). Rejected jobs are
+  hidden by default. Non-blocking uncertainties show as blue pills, not rejections.
+- **Job detail** — header + a clear separation of **Fit** (score, four components,
+  matches / gaps / concerns / uncertainties, summary) from **Eligibility**
+  (deterministic status + reasons). Geographic uncertainty is shown as an uncertainty,
+  never as a rejection. Cleaned (de-HTML'd) description and source provenance.
+- **Applications** — grouped action-first (Ready for approval, Needs input, Manual
+  review, …). Empty until Phase 2D creates applications.
+- **Application detail** — status, why it's waiting, the real append-only event
+  timeline, and a Phase-2D placeholder for resume/answers/cover-letter (not faked).
+- **Review** — blocking review items only, with resolve/reject + optional note (real
+  domain behavior). Non-blocking uncertainties are deliberately kept out of this queue.
+
+### Behavior without an LLM key
+
+The UI runs fully without `ANTHROPIC_API_KEY`. Unanalyzed jobs show **"Not analyzed"**
+— never a fabricated score. No Anthropic calls are made from the UI.
 
 ## Roadmap (Phase 2D+, deferred)
 

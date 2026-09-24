@@ -2,11 +2,11 @@ import type { Database } from '../db/client.js';
 import { loadSearchConfig, type SearchConfig } from '../config/searchConfig.js';
 import { enabledAdapters } from '../sources/index.js';
 import type { JobSourceAdapter, NormalizedJobCandidate } from '../sources/types.js';
-import { usersRepo, jobsRepo, jobSourcesRepo, matchesRepo, reviewsRepo } from '../repositories/index.js';
+import { usersRepo, jobsRepo, jobSourcesRepo, matchesRepo } from '../repositories/index.js';
 import { evaluateEligibility } from '../eligibility/engine.js';
-import type { EligibilityResult, ReviewCode } from '../eligibility/types.js';
-import type { NewReviewItem } from '../db/schema/reviewItems.js';
+import type { EligibilityResult } from '../eligibility/types.js';
 import type { JobMatch } from '../db/schema/jobMatches.js';
+import { parseSalary } from '../analysis/salaryParser.js';
 
 const EVALUATION_VERSION = 'elig-2b-1';
 
@@ -21,20 +21,9 @@ export interface DiscoverStats {
   eligible: number;
   rejected: number;
   needsReview: number;
-  reviewItemsCreated: number;
+  salaryExtracted: number;
   rejectionReasons: Record<string, number>;
   reviewReasons: Record<string, number>;
-}
-
-function reviewTypeFor(code: ReviewCode): NewReviewItem['reviewType'] {
-  switch (code) {
-    case 'SALARY_COMPARISON_AMBIGUOUS':
-      return 'SALARY_QUESTION';
-    case 'ROLE_SCOPE_AMBIGUOUS':
-      return 'OTHER';
-    default:
-      return 'AMBIGUOUS_ELIGIBILITY';
-  }
 }
 
 function mapToMatch(result: EligibilityResult): {
@@ -81,7 +70,7 @@ export async function runDiscovery(
     eligible: 0,
     rejected: 0,
     needsReview: 0,
-    reviewItemsCreated: 0,
+    salaryExtracted: 0,
     rejectionReasons: {},
     reviewReasons: {},
   };
@@ -107,6 +96,24 @@ export async function runDiscovery(
   const seenThisRun = new Set<string>();
   for (const c of candidates) {
     const existing = await jobsRepo.getJobByCanonicalUrl(db, c.canonicalUrl);
+
+    // Deterministic salary extraction: when a source gives no structured salary,
+    // try the conservative parser on the description. Ambiguous → stays unknown.
+    let salaryMin = c.salaryMin;
+    let salaryMax = c.salaryMax;
+    let salaryCurrency = c.salaryCurrency;
+    let salaryPeriod = c.salaryPeriod;
+    if (!salaryMin && !salaryMax) {
+      const parsed = parseSalary(c.description);
+      if (parsed) {
+        salaryMin = parsed.min != null ? String(parsed.min) : null;
+        salaryMax = parsed.max != null ? String(parsed.max) : null;
+        salaryCurrency = parsed.currency;
+        salaryPeriod = parsed.period;
+        stats.salaryExtracted += 1;
+      }
+    }
+
     const job = await jobsRepo.upsertJob(db, {
       canonicalUrl: c.canonicalUrl,
       companyName: c.companyName,
@@ -115,10 +122,10 @@ export async function runDiscovery(
       remoteType: c.remoteType,
       employmentType: c.employmentType,
       description: c.description,
-      salaryMin: c.salaryMin,
-      salaryMax: c.salaryMax,
-      salaryCurrency: c.salaryCurrency,
-      salaryPeriod: c.salaryPeriod,
+      salaryMin,
+      salaryMax,
+      salaryCurrency,
+      salaryPeriod,
       datePosted: c.datePosted,
     });
     await jobSourcesRepo.attachSource(db, {
@@ -166,20 +173,14 @@ export async function runDiscovery(
         stats.rejectionReasons[r.code] = (stats.rejectionReasons[r.code] ?? 0) + 1;
       }
     } else {
+      // NEEDS_REVIEW: these are non-blocking ambiguities (geography/role/remote/
+      // salary). Phase 2C does NOT create blocking review items for them — the
+      // ambiguity is recorded on the match and flows into fit analysis as
+      // uncertainties, so the shortlist can still surface the job.
       stats.needsReview += 1;
       const reviewReasons = result.reasons.filter((x) => x.kind === 'review');
       for (const r of reviewReasons) {
         stats.reviewReasons[r.code] = (stats.reviewReasons[r.code] ?? 0) + 1;
-      }
-      const primary = reviewReasons[0];
-      if (primary) {
-        const { created } = await reviewsRepo.createReviewIfAbsent(db, {
-          userId: user.id,
-          jobId: job.id,
-          reviewType: reviewTypeFor(primary.code as ReviewCode),
-          reason: `${result.summary}: ${primary.message}`,
-        });
-        if (created) stats.reviewItemsCreated += 1;
       }
     }
   }

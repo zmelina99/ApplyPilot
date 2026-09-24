@@ -5,11 +5,17 @@ roles, filters them against the candidate's rules, analyzes fit, and (eventually
 applies — using **only verified candidate information** and escalating anything it
 cannot answer confidently.
 
-> **Status: Phase 2B — real discovery & deterministic eligibility.** ApplyPilot now
-> pulls real current job postings from public APIs, stores/deduplicates them in
-> PostgreSQL, applies deterministic eligibility rules, and produces an inspectable
-> shortlist — all with **zero LLM calls**. No browser automation, scraping around
-> anti-bot systems, or application submission; Phase 2B stops at the shortlist.
+> **Status: Phase 2C — semantic fit analysis & ranked shortlist.** On top of real
+> discovery + deterministic eligibility, ApplyPilot now scores how well each eligible
+> (or non-blocking-ambiguous) job matches the candidate's *verified* experience,
+> caches the result, and produces a ranked, explainable shortlist of jobs worth
+> applying to. Fit analysis uses an LLM (Anthropic) gated on `ANTHROPIC_API_KEY`;
+> everything else is deterministic. No application submission — Phase 2C stops at the
+> ranked shortlist.
+>
+> **Philosophy:** *permissive about whether a job is worth trying; strict about the
+> truth of what we say to an employer.* Only a clear hard blocker stops a job;
+> geographic/hiring uncertainty is recorded and still analyzed, never a fake blocker.
 >
 > **Architecture principle:** multi-user-CAPABLE schema, single-user LOCAL V1. The
 > data model supports many users from the start so a future hosted product needs no
@@ -43,7 +49,8 @@ apply-pilot/
 ├── drizzle.config.ts    # drizzle-kit config (schema → migrations)
 ├── drizzle/             # Generated SQL migrations (committed)
 ├── config/
-│   └── search-profile.json  # Machine-authoritative search config (from search-rules.md)
+│   ├── search-profile.json   # Machine-authoritative search config (from search-rules.md)
+│   └── candidate-facts.json  # Verified candidate facts for fit analysis (no PII)
 ├── profile/             # Candidate source of truth (data, not logic)
 │   ├── candidate.md     # Identity, contact, location, work auth, languages, links
 │   ├── experience.md    # Authoritative record of experience & skill levels
@@ -55,7 +62,8 @@ apply-pilot/
 │   ├── domain/          # Pure logic: application state machine, canonical URL
 │   ├── sources/         # JobSourceAdapter boundary + Remotive/Arbeitnow/Jobicy
 │   ├── eligibility/     # Deterministic eligibility engine (no LLM)
-│   ├── pipeline/        # discover.ts — end-to-end discovery orchestration
+│   ├── analysis/        # Fit analyzer (Anthropic + fake), salary parser, ranking, cache
+│   ├── pipeline/        # discover.ts + analyze.ts orchestration
 │   ├── repositories/    # The ONLY place DB queries live (one module per entity)
 │   ├── seed/demo.ts     # Deterministic fictional demo (no LLM, no real data)
 │   ├── cli/index.ts     # Developer inspection CLI (not the product UI)
@@ -123,8 +131,10 @@ npm run db:migrate
 ### Everyday use
 
 ```bash
-npm run discover      # fetch real jobs → store/dedup → deterministic eligibility
-npm run shortlist     # see the eligible shortlist
+npm run discover               # fetch real jobs → store/dedup → eligibility + salary
+npm run analyze -- --dry-run   # preview how many jobs would be analyzed (no LLM calls)
+npm run analyze                # semantic fit analysis (needs ANTHROPIC_API_KEY)
+npm run shortlist              # ranked, explainable shortlist
 ```
 
 If your machine was restarted and PostgreSQL didn't come back up, start it again with
@@ -267,8 +277,55 @@ from, and kept in sync with, `profile/search-rules.md`) and produces one of
 This is **hard eligibility only** — `fit_score` stays NULL until Phase 2C. Ambiguous
 cases create a (deduped) review item rather than being dropped. No LLM is used.
 
-## Roadmap (Phase 2C+, deferred)
+## Phase 2C — semantic fit analysis & ranked shortlist
 
-Semantic/LLM fit scoring, application form filling, browser automation and
-submission, cover-letter generation, reporting, and any hosted-product
-infrastructure. None of it is built yet.
+Turns the deterministic shortlist into a ranked, explainable list of jobs worth
+applying to. Everything except the LLM call is deterministic.
+
+```bash
+npm run analyze -- --dry-run   # counts: eligible / non-blocking-ambiguous / rejects
+                               # skipped / already-cached / would-analyze — no LLM calls
+npm run analyze                # runs fit analysis on cache-misses (needs ANTHROPIC_API_KEY)
+npm run shortlist -- --min-fit 80 --limit 20
+npm run cli -- job <id>        # full fit breakdown for one job
+npm run cli -- review [list|show <id>|resolve <id>|reject <id>|cleanup] --note "..."
+```
+
+**What gets analyzed.** ELIGIBLE jobs and non-blocking-ambiguous jobs (geography/role
+uncertainty). Deterministic rejects are never sent to the LLM. So the candidate is not
+asked to hand-resolve dozens of geographic ambiguities before knowing if a job is even
+a good fit.
+
+**Candidate facts.** The analyzer sees only `config/candidate-facts.json` — a compact,
+verified projection of the approved profile (target titles, core techs with approved
+years, professionally-used techs *without* invented years, an explicit no-experience
+list, education, availability). No personal identifiers, no Markdown. It never claims
+experience, technologies, years, or an employer hiring policy not present.
+
+**Scoring rubric (weights sum to 100).** The model returns four component scores +
+reasoning + evidence; the overall score is computed deterministically:
+role alignment 30 · technical match 30 · experience/seniority 20 · responsibility 20.
+Geography and salary are **not** fit components. A "5+ years" ask is a small gap
+(candidate has 4+); missing a *preferred* skill is a small gap, missing a fundamental
+*required* one is large. Missing a degree isn't penalized unless a specific degree is
+explicitly mandatory. Output is validated (zod); malformed output fails safe.
+
+**Caching.** Keyed by profile version + prompt version + scoring version + normalized
+job content. Unchanged re-runs make ~0 LLM calls; token usage (input/output), calls,
+and cache hits are reported. Set `ANTHROPIC_MODEL` to override the default
+`claude-opus-5`.
+
+**Salary extraction.** A conservative deterministic parser fills salary from
+descriptions only when confident (EUR/CHF/USD/GBP, annual, with a salary/annual
+signal). It never guesses currency, converts, or treats OTE/equity as base. Ambiguous
+→ unknown, which is never a negative signal and never a false rejection.
+
+**Ranking.** Fit score first, then freshness (≤72h, newest), then confidence — never
+company fame; missing salary never lowers rank. Geographic uncertainty is shown
+prominently but doesn't sink a strong match.
+
+## Roadmap (Phase 2D+, deferred)
+
+Application form filling, browser automation and submission, cover-letter generation,
+reporting, and any hosted-product infrastructure. None of it is built yet. Truthful,
+verified-facts-only answers to real application questions come in that phase.

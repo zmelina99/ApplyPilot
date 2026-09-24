@@ -11,6 +11,7 @@
     "db:seed": "tsx src/seed/demo.ts",
     "cli": "tsx src/cli/index.ts",
     "discover": "tsx src/cli/index.ts discover",
+    "analyze": "tsx src/cli/index.ts analyze",
     "shortlist": "tsx src/cli/index.ts shortlist",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -21,9 +22,11 @@
   "type": "module",
   "private": true,
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
     "dotenv": "^18.0.3",
     "drizzle-orm": "^0.45.3",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

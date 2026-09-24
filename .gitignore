@@ -1,5 +1,11 @@
-# Personal data — NEVER commit (repo is public)
+# Personal data & secrets — NEVER commit (repo is public)
 .env
+.env.*.local
+
+# Node / TypeScript build artifacts
+node_modules/
+dist/
+*.tsbuildinfo
 
 # Local Claude Code settings (per-machine, not shared)
 .claude/settings.local.json

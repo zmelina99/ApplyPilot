@@ -1,104 +1,223 @@
 # search-rules.md — Job Search Rules
 
-Defines which jobs ApplyPilot pursues, rejects, or auto-applies to. Deterministic
-rules first; LLM judgment only where noted.
+Defines which jobs ApplyPilot pursues, rejects, or routes to review. Deterministic
+rules first; LLM judgment only where noted. Most values below are `[APPROVED]`.
 
-Status tags: `NEEDS_USER_INPUT` = must be provided; `NEEDS_REVIEW` = suggested
-default drafted from context, confirm or change. Bracketed defaults are suggestions,
-not decisions.
+Status: `APPROVED` = confirmed; `NEEDS_USER_INPUT` = still to provide.
 
 ---
 
-## Target titles (primary)
+## Primary goal
 
-Roles to actively search for.  [NEEDS_REVIEW — confirm/trim]
+Find Frontend Engineering positions.  [APPROVED]
+
+## Target titles  [APPROVED]
+
 - Frontend Engineer
 - Frontend Developer
-- Senior Frontend Engineer   # include only if seniority (below) allows
-- React Engineer / React Developer
-- confirm_or_edit: NEEDS_USER_INPUT
-
-## Acceptable adjacent titles
-
-Match if frontend-heavy; use LLM judgment on ambiguous ones.  [NEEDS_REVIEW]
-- Full-Stack Engineer (frontend-leaning)
-- Web Engineer / Web Developer
+- Senior Frontend Engineer
+- React Engineer
+- React Developer
+- Software Engineer — Frontend
 - UI Engineer
-- Software Engineer (Frontend)
-- Product Engineer (frontend-leaning)
-- confirm_or_edit: NEEDS_USER_INPUT
+- Web Engineer / Web Developer
+- Product Engineer — when frontend-heavy
+- Full-Stack Engineer — when frontend-heavy
+- Frontend Lead / Tech Lead — when still substantially hands-on
 
-## Explicitly out-of-scope titles
+Use LLM judgment only to decide "frontend-heavy" / "substantially hands-on" for the
+conditional titles; exact-title matches are deterministic.
 
-Titles to ignore even if they mention frontend.  [NEEDS_USER_INPUT]
-- suggested to consider excluding: Backend Engineer, Data Engineer, pure Designer,
-  Engineering Manager, QA-only. Confirm.
+## Seniority  [APPROVED]
 
-## Locations & remote
+- include: Mid, Senior, Lead (only if substantially hands-on)
+- exclude: Intern, Junior, Principal, Engineering Manager / pure people-management
+- staff: exclude UNLESS actual responsibilities are reasonably aligned with candidate
+  experience (route ambiguous cases to review rather than auto-reject)
 
-- remote_requirement: NEEDS_USER_INPUT   # remote-only | hybrid-ok | onsite-ok
-- acceptable_countries: NEEDS_USER_INPUT
-  - note: Prior roles were remote for Swiss and US companies. Which countries'
-    companies are acceptable now? Tie this to work authorization in candidate.md.
-- acceptable_timezones: NEEDS_USER_INPUT   # e.g. Europe / CET ± N hours
-- onsite_cities_ok: NEEDS_USER_INPUT
-- relocation_ok: NEEDS_USER_INPUT   # and to where, if yes
+## Out-of-scope roles (hard reject)  [APPROVED]
 
-## Seniority
+- Backend-only
+- Data Engineer
+- QA-only
+- Designer-only
 
-- target_levels: NEEDS_USER_INPUT   # e.g. mid / senior
-  - note: Resume shows ~4+ years and a "Frontend Lead" role. Confirm whether to
-    include Senior/Lead, and whether to exclude Junior/Intern.
-- exclude_levels: NEEDS_USER_INPUT   # e.g. Intern, Junior, Manager/EM
-- accept_lead_or_manager_titles: NEEDS_USER_INPUT
+## Years-of-experience handling  [APPROVED]
 
-## Preferred technologies (soft signal, not gating)
+- Treat a role's years-of-experience requirement as a **fit signal**, not a hard gate.
+- Do NOT auto-reject merely because a role asks for 5+ years and the candidate has 4+.
+- Only treat as reject-worthy when the discrepancy is substantial OR the posting
+  clearly frames the number as a hard eligibility requirement.
 
-Presence boosts fit score; absence never rejects.  [NEEDS_REVIEW]
-- React, TypeScript, Next.js, Ionic/Capacitor, data-viz (D3/Recharts/Visx), Nx
-- add/remove: NEEDS_USER_INPUT
+---
 
-## Hard rejection criteria (deterministic — any match rejects)
+## Locations & remote  [APPROVED]
 
-Confirm each. Suggested candidates marked, but nothing here is active until approved.
-- work_authorization_not_met: reject if the role's country isn't authorized in
-  candidate.md AND the role won't sponsor.  [NEEDS_REVIEW]
-- remote_policy_mismatch: reject if onsite-only and candidate is remote-only.  [NEEDS_USER_INPUT]
-- seniority_mismatch: reject titles below/above target levels.  [NEEDS_USER_INPUT]
-- min_salary_below_floor: reject if stated salary below floor (see answers.md).  [NEEDS_USER_INPUT]
-- required_language_not_met: reject if a language is REQUIRED at a level the
-  candidate lacks (e.g. German-required roles).  [NEEDS_USER_INPUT]
-- excluded_companies: NEEDS_USER_INPUT   # blocklist (e.g. current/former employers)
-- excluded_industries: NEEDS_USER_INPUT   # e.g. gambling, defense — if any
-- required_stack_absent: reject only if a REQUIRED core skill is `none` in
-  experience.md (never for PREFERRED).  [NEEDS_REVIEW]
-- other_hard_rejects: NEEDS_USER_INPUT
+Search regions: Europe, Switzerland, United States, Canada, Latin America.
 
-## Soft preferences (scoring, not gating)
+**Europe** (candidate may live anywhere in Europe) — eligible:
+- Remote Europe / Remote EU / Remote EEA
+- Remote EMEA when European residence is accepted
+- Country-specific European remote jobs when the candidate is legally eligible
+- Worldwide / fully-remote jobs
 
-Adjust fit score; never reject on their own.  [NEEDS_USER_INPUT]
-- company_size_preference: NEEDS_USER_INPUT   # resume notes thriving in small teams
-- industry_interests: NEEDS_USER_INPUT
-- mission/product_preferences: NEEDS_USER_INPUT
-- tech_culture_signals: NEEDS_USER_INPUT   # e.g. testing culture, design maturity
-- solutions/implementation-adjacent_bonus: NEEDS_USER_INPUT
-  - note: Stated long-term goal is a move toward Solutions/Implementation
-    Engineering. Should such-adjacent frontend roles score higher?
+**United Kingdom** (treated separately from the Europe eligibility rule):
+- Remote UK roles are eligible ONLY if the employer can hire the candidate
+  internationally without requiring UK work authorization/residency (international
+  contractor, EOR, global employment, or equivalent).
+- Reject roles explicitly requiring UK residence or UK work authorization when no
+  international hiring route exists.
+- If UK hiring eligibility is unclear → escalate, do not assume.
 
-## Job-age limits
+**Hybrid / onsite:**
+- Valencia, Spain: allowed
+- Switzerland: allowed (relocation/onsite specifics open to discussion)
+- Everywhere else: remote only
 
-- max_job_age_days: NEEDS_USER_INPUT   # suggested default: 14
-- reprocess_reposted_jobs: NEEDS_USER_INPUT   # yes/no
+**Outside Europe / Switzerland / Argentina (US, Canada, other):**
+- The role must permit performing the work while living outside that country via
+  international remote employment, EOR, contracting, or freelancing — i.e. NO local
+  work authorization/residency required.
+- "Remote US" does NOT imply internationally remote — do not assume it does.
+- Reject if the role explicitly requires local residence/work authorization and
+  offers no international hiring path.
 
-## Auto-apply criteria (eventual — Phase 2+, disabled for now)
+**Employment arrangements accepted** (any legitimate one): permanent employee,
+fixed-term employee, EOR, contractor, independent contractor, freelancer, or other
+legitimate cross-border arrangements.
 
-All auto-apply is OFF until explicitly enabled. Define the bar for later.
-- auto_apply_enabled: false  [locked until Phase 2]
-- min_fit_score_to_auto_apply: NEEDS_USER_INPUT   # e.g. 0.85 on a 0–1 scale
-- require_all_required_skills_present: NEEDS_USER_INPUT   # suggested: true
-- max_auto_applies_per_day: NEEDS_USER_INPUT
-- never_auto_apply_if_form_has_unanswerable_question: NEEDS_USER_INPUT   # suggested: true
-- always_escalate_before_apply_when: NEEDS_USER_INPUT
-  - suggested: any `NEEDS_USER_INPUT` field is touched, salary is required and no
-    floor is set, or a cover letter / free-text essay is required.
-- require_human_approval_before_first_N_applies: NEEDS_USER_INPUT   # suggested: true
+**Relocation:** open to discussion. Do NOT state the candidate has committed to
+relocate. Do NOT auto-reject a strong role because relocation is merely discussed —
+only when relocation is explicitly mandatory AND conflicts with the rules above.
+
+## Work authorization (reject logic)  [APPROVED]
+
+- Europe / Switzerland / Argentina: do not reject on sponsorship/local-authorization
+  grounds.
+- United Kingdom: NOT covered by the Europe rule — hireable only via international
+  arrangements with no UK work authorization/residency required (see UK block above).
+- Outside those: candidate must be hireable remotely without local work authorization
+  (international contractor, EOR, global employment, or equivalent).
+- Reject if a role explicitly requires local (US/Canada/etc.) work authorization or
+  residency and offers no international hiring route.
+- If international hiring eligibility is ambiguous: do NOT assume — flag for review.
+- Never infer legal work authorization from nationality.
+
+---
+
+## Salary rules  [APPROVED]
+
+Numeric configuration (explicit fields; do not compute others at runtime):
+- salary_floor_eur: 50000        # annual equivalent, general non-Swiss roles
+- salary_target_eur: 60000       # annual equivalent
+- salary_floor_chf: 85000        # annual equivalent, Swiss roles (hard reject below)
+- salary_target_chf: 100000      # preferred / default numeric expectation for CH
+
+Filtering:
+- If advertised compensation is clearly below the applicable hard floor → reject.
+- Do NOT reject Swiss roles between CHF 85k and CHF 100k — the floor is the reject
+  threshold; the target is only the preferred/default expectation.
+- If salary is not advertised → do NOT reject.
+- Consider contract type when interpreting compensation; do not naively compare
+  contractor gross vs. employee salary when arrangements differ materially.
+- If the compensation structure makes comparison ambiguous → escalate, don't reject.
+- Never disclose current/previous salary unless explicitly approved later.
+
+(Application-form salary answers live in answers.md.)
+
+---
+
+## Job freshness  [APPROVED]
+
+- max_job_age_days: 14
+- prioritize_posted_within_hours: 72
+- Do not auto-exclude a clearly exceptional, still-active match solely for being
+  slightly older than 14 days.
+
+## Application volume  [APPROVED]
+
+- daily_application_cap: none
+- Apply to every job passing eligibility + fit; not blind mass application — quality
+  filters still apply.
+
+---
+
+## HARD ELIGIBILITY vs SKILL FIT  [APPROVED]
+
+Two distinct concepts — never conflate:
+
+- **HARD ELIGIBILITY** (deterministic, may reject): location/remote rules, work
+  authorization rules, salary below floor, out-of-scope title/seniority, a skill the
+  job clearly frames as fundamental/non-negotiable that the candidate lacks.
+- **SKILL FIT** (scoring, never auto-rejects on its own): missing a required-but-not-
+  fundamental technology lowers the fit score but does not reject. Example: a role
+  wanting React + TypeScript + GraphQL + AWS is not auto-rejected just because the
+  candidate lacks GraphQL/AWS, unless the posting presents them as non-negotiable.
+
+## Preferred technologies (soft signal, boosts fit; never gates)  [APPROVED]
+
+React, TypeScript, Next.js, Ionic/Capacitor, data-viz (D3/Recharts/Visx), Nx.
+
+## Soft preferences (scoring only)
+
+- company_size_preference: small teams (resume-stated)  [NEEDS_REVIEW]
+- other_soft_preferences: NEEDS_USER_INPUT
+
+## Search-profile scope  [APPROVED]
+
+- profile_scope: Frontend employment ONLY. Do NOT add a Solutions Engineer /
+  Implementation Engineer scoring bonus to this profile.
+- future_profiles (architecture placeholder — do NOT implement now): the system
+  should support additional, separate search profiles for Solutions Engineer,
+  Implementation Engineer, Customer Engineer, and Forward-Deployed Engineer. These
+  are not built and must not influence the current frontend profile's scoring.
+
+---
+
+## Human review & auto-apply gates  [APPROVED]
+
+All autonomous submission is OFF until explicitly authorized (see below). Even the
+architecture for it is Phase 2; nothing auto-submits now.
+
+### A. Initial safety period
+- The first 20 applications ApplyPilot prepares MUST stop before submit for candidate
+  approval. Flow: Find → Filter → Analyze → Fill → STOP → candidate reviews →
+  candidate approves → submit.
+- Count only applications the candidate actually reviewed toward this calibration.
+- After 20 reviewed applications, do NOT auto-enable autonomous submission. Enter a
+  hard gate state: `AWAITING_AUTOMATION_APPROVAL`. Continue requiring approval until
+  the candidate explicitly authorizes autonomous submission.
+
+### B. Swiss applications
+- Applications to Swiss companies / positions ALWAYS require human approval before
+  submission — even after autonomous submission is enabled.
+
+### C. Exceptional small-startup matches
+- If a role is an exceptionally strong match AND the company appears to be a small
+  startup → require human review before submission.
+- Do not decide this on vague LLM intuition alone.
+- Placeholders to configure later (do NOT invent thresholds now):
+  - exceptional_match_threshold: NEEDS_USER_INPUT
+  - small_startup_definition: NEEDS_USER_INPUT
+- Until both are configured, if the system suspects this category applies →
+  flag `MANUAL_REVIEW` rather than auto-submit.
+
+### Never auto-submit (even after autonomous submission is approved)  [APPROVED]
+Route to the appropriate review/escalation state if ANY apply:
+- required information is missing
+- an answer would require guessing
+- work authorization is ambiguous
+- international hiring eligibility is ambiguous
+- a mandatory salary input cannot be answered by the approved rules
+- the application contains a question unsupported by the profile
+- a CAPTCHA requires manual intervention
+- login / account creation requires user action
+- the system is uncertain whether submission would be truthful
+- the Swiss review rule applies
+- the exceptional-small-startup review rule applies
+
+## Auto-apply criteria (Phase 2+, disabled)
+
+- auto_apply_enabled: false  [locked until explicit authorization]
+- min_fit_score_to_auto_apply: NEEDS_USER_INPUT
+- require_all_hard_eligibility_met: true  [APPROVED]

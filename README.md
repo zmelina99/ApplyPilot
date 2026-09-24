@@ -95,28 +95,47 @@ TypeScript · PostgreSQL · Drizzle ORM. The database connection comes only from
 `DATABASE_URL` (never hardcoded), so the same code runs on local and managed
 PostgreSQL without changes.
 
-### Local setup
+### Local setup (first time)
+
+You need a local PostgreSQL on `localhost:5432`. Use **either** Homebrew or Docker.
 
 ```bash
-# 1. Start a local PostgreSQL (dev only)
-docker compose up -d
-docker compose exec db createdb -U applypilot applypilot_test   # once, for tests
+# 0. Configure connection (defaults already match the setup below)
+cp .env.example .env        # ensure DATABASE_URL + TEST_DATABASE_URL are set:
+#   DATABASE_URL=postgres://applypilot:applypilot@localhost:5432/applypilot_dev
+#   TEST_DATABASE_URL=postgres://applypilot:applypilot@localhost:5432/applypilot_test
 
-# 2. Configure connection
-cp .env.example .env        # then set DATABASE_URL + TEST_DATABASE_URL
+# 1a. Start PostgreSQL — macOS / Homebrew (auto-starts at login):
+brew services start postgresql@14
+# 1b. …or Docker instead:
+#   docker compose up -d
 
-# 3. Install, migrate, seed
+# 2. Create the role + dev/test databases (idempotent one-time step)
+npm run db:setup            # uses scripts/setup-local-db.sh
+#   (Docker users can skip this — compose creates applypilot_dev; still create the
+#    test db once:  docker compose exec db createdb -U applypilot applypilot_test)
+
+# 3. Install deps and apply migrations
 npm install
 npm run db:migrate
-npm run db:seed
 ```
 
-`.env` values for the provided compose file:
+### Everyday use
 
+```bash
+npm run discover      # fetch real jobs → store/dedup → deterministic eligibility
+npm run shortlist     # see the eligible shortlist
 ```
-DATABASE_URL=postgres://applypilot:applypilot@localhost:5432/applypilot_dev
-TEST_DATABASE_URL=postgres://applypilot:applypilot@localhost:5432/applypilot_test
-```
+
+If your machine was restarted and PostgreSQL didn't come back up, start it again with
+`brew services start postgresql@14` (Homebrew) or `docker compose up -d` (Docker).
+
+### Troubleshooting
+
+**`CLI error: Failed query: select ... from "users" ...`** — PostgreSQL isn't running
+or the database/role doesn't exist. Fix: start PostgreSQL (`brew services start
+postgresql@14`), then `npm run db:setup && npm run db:migrate`. Confirm connectivity
+with `pg_isready -h localhost -p 5432`.
 
 (No Docker? Any local or managed PostgreSQL works — just point `DATABASE_URL` at it.)
 

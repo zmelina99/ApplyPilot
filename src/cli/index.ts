@@ -170,7 +170,7 @@ async function cmdJob(db: Database, id: string): Promise<void> {
 async function requireUserId(db: Database): Promise<string> {
   const user = await usersRepo.getFirstUser(db);
   if (!user) {
-    throw new Error('No user found. Run: npm run db:seed');
+    throw new Error('No data yet. Run: npm run discover  (or npm run db:seed for the demo)');
   }
   return user.id;
 }

@@ -24,6 +24,13 @@ async function tableNames(handle: DbHandle): Promise<string[]> {
   return res.rows.map((r) => (r as { table_name: string }).table_name);
 }
 
+/**
+ * The global setup (tests/globalSetup.ts) drops all app objects and runs migrations
+ * from empty before any test file — so reaching this file already proves migrations
+ * succeed on an empty database. These tests assert the resulting schema and that
+ * re-applying migrations is a safe no-op. They do NOT drop the shared schema (that
+ * would corrupt the database other test files rely on).
+ */
 describe('migrations', () => {
   let handle: DbHandle;
 
@@ -32,25 +39,15 @@ describe('migrations', () => {
   });
 
   afterAll(async () => {
-    // Leave the DB migrated for the other test files.
-    await runMigrations(handle.db);
     await handle.close();
   });
 
-  it('succeed on an empty database', async () => {
-    // Fully reset: drop public schema AND the drizzle bookkeeping schema.
-    await handle.db.execute(sql.raw('drop schema if exists drizzle cascade'));
-    await handle.db.execute(sql.raw('drop schema if exists public cascade'));
-    await handle.db.execute(sql.raw('create schema public'));
-
-    await runMigrations(handle.db);
-
+  it('produced every expected table from an empty database', async () => {
     const names = await tableNames(handle);
     for (const t of EXPECTED_TABLES) expect(names).toContain(t);
   });
 
   it('are safe to reapply through the normal migration mechanism', async () => {
-    // Idempotent: applying again is a no-op and must not throw.
     await expect(runMigrations(handle.db)).resolves.not.toThrow();
     const names = await tableNames(handle);
     for (const t of EXPECTED_TABLES) expect(names).toContain(t);

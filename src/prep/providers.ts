@@ -8,6 +8,8 @@ export interface NormalizedQuestion {
   fieldType: string; // text | textarea | select | multiselect | boolean | file
   required: boolean;
   options?: string[] | null;
+  /** Input placeholder when present (e.g. MM/DD/YYYY date fields). */
+  placeholder?: string | null;
 }
 
 const HOST_PROVIDER: [RegExp, ProviderName][] = [
@@ -32,7 +34,7 @@ export function detectProvider(url: string): ProviderName {
 
 /** Whether we can inspect this provider's form structure safely/publicly. */
 export function isStructuredProvider(p: ProviderName): boolean {
-  return p === 'GREENHOUSE';
+  return p === 'GREENHOUSE' || p === 'WORKABLE';
 }
 
 /** Parse Greenhouse board + job id from any of its public URL shapes. */

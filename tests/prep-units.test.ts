@@ -37,6 +37,10 @@ describe('question classification', () => {
     expect(classifyQuestion('Country (or territory) of residence')).toBe('LOCATION');
     expect(classifyQuestion('On average, how many hours could you commit per week?')).toBe('AVAILABILITY');
     expect(classifyQuestion('Something unusual and specific')).toBe('UNKNOWN');
+    expect(classifyQuestion(
+      'Tell us with specific detail about work you have done. If source code is available, provide a URL.',
+      'textarea',
+    )).toBe('FREE_TEXT');
   });
 });
 
@@ -115,6 +119,10 @@ describe('deterministic answering — truthfulness', () => {
   it('handles unknown required vs optional', () => {
     expect(ask('Some unusual company-specific field', { required: true })).toMatchObject({ status: 'NEEDS_INPUT' });
     expect(ask('Some unusual company-specific field', { required: false })).toMatchObject({ status: 'OPTIONAL_BLANK' });
+  });
+  it('splits first and last name when the form asks separately', () => {
+    expect(ask('First name')).toMatchObject({ value: 'Test', status: 'READY' });
+    expect(ask('Last name')).toMatchObject({ value: 'User', status: 'READY' });
   });
   it('uses profile identity + deterministic facts', () => {
     expect(ask('Full name')).toMatchObject({ value: 'Test User', source: 'PROFILE', status: 'READY' });

@@ -13,11 +13,12 @@ import { loadSearchConfig } from '../config/searchConfig.js';
 import { detectDefaultResume } from './resume.js';
 import { and, eq } from 'drizzle-orm';
 import { applications } from '../db/schema/index.js';
-import { resolveApplyUrl, inspectDestination, httpFetcher, type Fetcher } from './resolve.js';
+import { resolveApplyUrl, inspectDestination, httpFetcher, type Fetcher, type WorkableInspector } from './resolve.js';
 import type { BrowserResolver } from './browserResolver.js';
 import { classifyQuestion } from './classify.js';
 import { answerQuestion, type AnswerContext, type PrepQuestion } from './answer.js';
 import { standardQuestions } from './standardQuestions.js';
+import type { NormalizedQuestion } from './providers.js';
 import type { PreparedItem } from '../repositories/applicationPrep.js';
 import type { NewApplicationQuestion, NewApplicationAnswer } from '../db/schema/applicationPrep.js';
 
@@ -63,12 +64,21 @@ function buildItems(
   const raw = inspect.supported
     ? inspect.questions.map((q) => ({
         ...q,
-        category: classifyQuestion(q.label, q.fieldType),
+        category: q.providerFieldId === 'resume'
+          ? 'RESUME'
+          : classifyQuestion(q.label, q.fieldType),
       }))
     : standardQuestions();
 
   return raw.map((q) => {
-    const pq: PrepQuestion = { label: q.label, category: q.category, fieldType: q.fieldType, required: q.required, options: q.options ?? null };
+    const pq: PrepQuestion = {
+      label: q.label,
+      category: q.category,
+      fieldType: q.fieldType,
+      required: q.required,
+      options: q.options ?? null,
+      placeholder: (q as NormalizedQuestion).placeholder ?? null,
+    };
     const a = answerQuestion(pq, ctx);
     const question: PreparedItem['question'] = {
       providerFieldId: ('providerFieldId' in q ? q.providerFieldId : null) ?? null,
@@ -136,7 +146,7 @@ async function firstSourceName(db: Database, jobId: string): Promise<string> {
 export async function prepareApplication(
   db: Database,
   jobId: string,
-  opts: { fetcher?: Fetcher; browserResolver?: BrowserResolver } = {},
+  opts: { fetcher?: Fetcher; browserResolver?: BrowserResolver; inspectWorkable?: WorkableInspector } = {},
 ): Promise<PrepSummary> {
   const fetcher = opts.fetcher ?? httpFetcher;
   const user = await usersRepo.getFirstUser(db) ?? (await usersRepo.createUser(db, { displayName: 'Local User' }));
@@ -148,7 +158,7 @@ export async function prepareApplication(
   const sourceName = await firstSourceName(db, jobId);
 
   const resolved = await resolveApplyUrl(job.canonicalUrl, sourceName, fetcher, opts.browserResolver);
-  const inspect = await inspectDestination(resolved, fetcher);
+  const inspect = await inspectDestination(resolved, fetcher, { inspectWorkable: opts.inspectWorkable });
   const items = buildItems(inspect, ctx);
   const targetStatus = computeStatus(inspect, items);
   const resumeStatus = ctx.resumeAvailable ? 'READY' : 'MISSING';

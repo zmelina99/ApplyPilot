@@ -60,7 +60,14 @@ export function answerQuestion(q: PrepQuestion, ctx: AnswerContext): ProposedAns
 
   const { facts, identity } = ctx;
   switch (q.category) {
-    case 'NAME': return identity.fullName ? ready(identity.fullName, 'PROFILE') : needsInput();
+    case 'NAME': {
+      if (!identity.fullName) return needsInput();
+      const parts = identity.fullName.trim().split(/\s+/);
+      const l = q.label.toLowerCase();
+      if (/first name/.test(l)) return ready(parts[0]!, 'PROFILE');
+      if (/last name/.test(l)) return ready(parts.slice(1).join(' ') || parts[0]!, 'PROFILE');
+      return ready(identity.fullName, 'PROFILE');
+    }
     case 'EMAIL': return identity.email ? ready(identity.email, 'PROFILE') : needsInput();
     case 'PHONE': return identity.phone ? ready(identity.phone, 'PROFILE') : needsInput();
     case 'LINKEDIN': return identity.linkedinUrl ? ready(identity.linkedinUrl, 'PROFILE') : needsInput();

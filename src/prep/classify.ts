@@ -23,6 +23,7 @@ export function classifyQuestion(labelRaw: string, fieldType = 'text'): Question
   if (has(/linkedin/)) return 'LINKEDIN';
   if (has(/github|gitlab/)) return 'GITHUB';
   if (has(/portfolio|personal (web)?site|website|your url/)) return 'PORTFOLIO';
+  if (fieldType === 'file') return has(/resume|résumé|\bcv\b|curriculum/) ? 'RESUME' : 'UNKNOWN';
   if (has(/resume|résumé|\bcv\b|curriculum/)) return 'RESUME';
   if (has(/cover letter/)) return 'COVER_LETTER';
   if (has(/sponsor/)) return 'SPONSORSHIP';
@@ -30,7 +31,7 @@ export function classifyQuestion(labelRaw: string, fieldType = 'text'): Question
   if (has(/salary|compensation|expected pay|rate expectation|desired (pay|salary)/)) return 'SALARY_EXPECTATION';
   if (has(/relocat/)) return 'RELOCATION';
   if (has(/hours? per week|hours?\/week|weekly hours|commit.*per week|hours could you commit/)) return 'AVAILABILITY';
-  if (has(/notice period|start date|available|availability|when can you|when could you begin/)) return 'AVAILABILITY';
+  if (has(/notice period|start date|when can you start|when could you begin|available to start|availability to start|\bavailability\b/)) return 'AVAILABILITY';
   if (has(/degree|education|university|bachelor|master|diploma|school/)) return 'EDUCATION';
   if (has(/language/)) return 'LANGUAGE';
   if (has(/country.*residence|territory of residence|residence.*country/)) return 'LOCATION';
@@ -41,7 +42,7 @@ export function classifyQuestion(labelRaw: string, fieldType = 'text'): Question
   }
   if (namedTech(l) && has(/experience|proficien|familiar|worked with|used/)) return 'TECH_YEARS';
 
-  if (has(/why (do you |are you )?(want|interested|applying|choose)|why (this )?(company|role|us|position)|what (interests|excites)|tell us about|about yourself|motivat/)) return 'WHY_COMPANY';
+  if (has(/why (do you |are you |would you like to )?(want|interested|applying|choose|join)|why (this )?(company|role|us|position)|what (interests|excites)|tell us about|about yourself|motivat/)) return 'WHY_COMPANY';
 
   if (fieldType === 'textarea' || has(/describe|explain|tell us|share|elaborate/)) return 'FREE_TEXT';
   return 'UNKNOWN';

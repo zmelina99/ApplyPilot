@@ -19,8 +19,10 @@ export function detectDefaultResume(
   dir = path.resolve('resumes'),
   configPath?: string,
 ): DefaultResume {
-  const { defaultFile } = loadApplicationDefaults(configPath).resume;
+  let { defaultFile } = loadApplicationDefaults(configPath).resume;
   if (!defaultFile) return { available: false, name: null, path: null };
+  // Accept either a bare filename or a resumes/ prefix in config.
+  defaultFile = defaultFile.replace(/^resumes[/\\]/, '');
   const full = path.join(dir, defaultFile);
   if (!existsSync(full)) return { available: false, name: defaultFile, path: null };
   return { available: true, name: defaultFile, path: full };

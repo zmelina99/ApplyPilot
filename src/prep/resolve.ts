@@ -3,6 +3,7 @@ import {
   type NormalizedQuestion, type ProviderName,
 } from './providers.js';
 import type { BrowserResolver } from './browserResolver.js';
+import { inspectWorkableApplyForm, type WorkableInspectResult } from './workableInspector.js';
 
 export interface FetchResult { status: number; finalUrl: string; text: string }
 export type Fetcher = (url: string) => Promise<FetchResult>;
@@ -98,13 +99,33 @@ export interface InspectResult {
   note: string | null;
 }
 
-/** Inspect a resolved destination. Only Greenhouse is inspected structurally (public
- * questions API); everything else is left unsupported (form not auto-understood). */
-export async function inspectDestination(resolved: ResolveResult, fetcher: Fetcher): Promise<InspectResult> {
+export type WorkableInspector = (applyUrl: string) => Promise<WorkableInspectResult>;
+
+/** Inspect a resolved destination. Greenhouse uses its public questions API; Workable
+ * uses read-only browser extraction. Everything else is unsupported. */
+export async function inspectDestination(
+  resolved: ResolveResult,
+  fetcher: Fetcher,
+  opts: { inspectWorkable?: WorkableInspector } = {},
+): Promise<InspectResult> {
   const base: InspectResult = {
     provider: resolved.provider, applyUrl: resolved.applyUrl, supported: false,
     loginRequired: Boolean(resolved.loginRequired), captcha: false, questions: [], note: resolved.note ?? null,
   };
+
+  if (resolved.provider === 'WORKABLE') {
+    const inspectWorkable = opts.inspectWorkable ?? inspectWorkableApplyForm;
+    const w = await inspectWorkable(resolved.applyUrl);
+    return {
+      ...base,
+      supported: w.supported,
+      loginRequired: w.loginRequired || base.loginRequired,
+      captcha: w.captcha,
+      questions: w.questions,
+      note: w.note ?? base.note,
+    };
+  }
+
   if (resolved.provider !== 'GREENHOUSE') return base;
 
   const gh = parseGreenhouse(resolved.applyUrl);

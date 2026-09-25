@@ -35,6 +35,25 @@ describe('default resume resolution', () => {
     expect(detectDefaultResume(dir, cfgPath)).toEqual({ available: false, name: 'approved.pdf', path: null });
   });
 
+  it('accepts a resumes/ prefix in defaultFile config', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'applypilot-resume-'));
+    const cfgPath = join(dir, 'application-defaults.json');
+    writeFileSync(join(dir, 'approved.pdf'), '%PDF');
+    writeFileSync(cfgPath, JSON.stringify({
+      _meta: { profileVersion: 'test' },
+      availability: 'immediate',
+      weeklyHours: 40,
+      applicationCountry: { swissJob: 'Switzerland', default: 'Spain' },
+      salary: { usdHourly: 35 },
+      resume: { defaultFile: 'resumes/approved.pdf' },
+    }));
+    expect(detectDefaultResume(dir, cfgPath)).toEqual({
+      available: true,
+      name: 'approved.pdf',
+      path: join(dir, 'approved.pdf'),
+    });
+  });
+
   it('resolves the approved file when configured and present', () => {
     const dir = mkdtempSync(join(tmpdir(), 'applypilot-resume-'));
     const cfgPath = join(dir, 'application-defaults.json');

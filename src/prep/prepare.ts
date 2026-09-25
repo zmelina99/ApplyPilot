@@ -10,6 +10,7 @@ import { loadApplicationDefaults } from '../config/applicationDefaults.js';
 import { loadCandidateFacts } from '../config/candidateFacts.js';
 import { loadCandidateIdentity } from '../config/candidateIdentity.js';
 import { loadSearchConfig } from '../config/searchConfig.js';
+import { encodeLocalFile, MANUAL_AT_APPLY_TIME, validateLocalFile } from './artifacts.js';
 import { detectDefaultResume } from './resume.js';
 import { and, eq } from 'drizzle-orm';
 import { applications } from '../db/schema/index.js';
@@ -306,25 +307,40 @@ async function revalidate(db: Database, applicationId: string): Promise<void> {
  * Persist a user's answer to one question, record it, optionally save it as a
  * reusable approved answer, and revalidate the application. Never submits.
  */
+export type UserAnswerMode = 'text' | 'local_file' | 'manual';
+
 export async function applyUserAnswer(
   db: Database,
   questionId: string,
   value: string,
-  opts: { reusable?: boolean } = {},
+  opts: { reusable?: boolean; mode?: UserAnswerMode; localFile?: string } = {},
 ): Promise<void> {
   const question = await prepRepo.getQuestion(db, questionId);
   if (!question) throw new Error(`Question not found: ${questionId}`);
-  await prepRepo.setUserAnswer(db, questionId, value);
+
+  let stored = value.trim();
+  const mode = opts.mode ?? 'text';
+  if (mode === 'manual') {
+    stored = MANUAL_AT_APPLY_TIME;
+  } else if (mode === 'local_file') {
+    const file = (opts.localFile ?? value).trim();
+    if (!validateLocalFile(file)) throw new Error(`Local file not found in resumes/: ${file}`);
+    stored = encodeLocalFile(file);
+  } else if (!stored) {
+    throw new Error('Answer value required');
+  }
+
+  await prepRepo.setUserAnswer(db, questionId, stored);
   await eventsRepo.recordEvent(db, {
     applicationId: question.applicationId,
     eventType: 'USER_ANSWERED',
-    metadata: { category: question.category, label: question.label },
+    metadata: { category: question.category, label: question.label, mode },
   });
-  if (opts.reusable) {
+  if (opts.reusable && mode === 'text') {
     const user = await usersRepo.getFirstUser(db);
     if (user) {
       const label = question.category === 'TECH_YEARS' ? namedTech(question.label.toLowerCase()) : null;
-      await prepRepo.saveReusableAnswer(db, user.id, question.category, label, value);
+      await prepRepo.saveReusableAnswer(db, user.id, question.category, label, stored);
     }
   }
   await revalidate(db, question.applicationId);

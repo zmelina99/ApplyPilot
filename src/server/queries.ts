@@ -215,7 +215,8 @@ export async function getApplicationDetail(db: Database, id: string): Promise<Ap
     formUnderstood: app.formUnderstood, resumeStatus: app.resumeStatus ?? null,
     preparationNote: app.preparationNote ?? null,
     questions: form.map((r) => ({
-      questionId: r.question.id, label: r.question.label, category: r.question.category,
+      questionId: r.question.id, providerFieldId: r.question.providerFieldId,
+      label: r.question.label, category: r.question.category,
       fieldType: r.question.fieldType, required: r.question.required,
       options: (r.question.options as string[] | null) ?? null, sourceKind: r.question.sourceKind,
       answer: {

@@ -28,7 +28,9 @@ export const api = {
   resolveReview: (id: string, note?: string) => post(`/api/reviews/${id}/resolve`, { note }),
   rejectReview: (id: string, note?: string) => post(`/api/reviews/${id}/reject`, { note }),
   prepareJob: (jobId: string) => post<{ applicationId: string | null }>(`/api/jobs/${jobId}/prepare`, {}),
-  answer: (appId: string, questionId: string, value: string, reusable: boolean) =>
-    post<AppDetail>(`/api/applications/${appId}/answers`, { questionId, value, reusable }),
+  localFiles: () => get<{ files: string[] }>('/api/local-files'),
+  answer: (appId: string, body: {
+    questionId: string; value?: string; reusable?: boolean; localFile?: string; manual?: boolean;
+  }) => post<AppDetail>(`/api/applications/${appId}/answers`, body),
   approve: (appId: string) => post<AppDetail>(`/api/applications/${appId}/approve`, {}),
 };

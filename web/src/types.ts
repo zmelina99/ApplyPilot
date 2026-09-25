@@ -45,7 +45,7 @@ export interface AppListItem {
 }
 
 export interface PreparedQuestionView {
-  questionId: string; label: string; category: string; fieldType: string;
+  questionId: string; providerFieldId: string | null; label: string; category: string; fieldType: string;
   required: boolean; options: string[] | null; sourceKind: string;
   answer: { value: string | null; source: string; status: string; confidence: string; approved: boolean; reusable: boolean };
 }

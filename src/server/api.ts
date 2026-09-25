@@ -2,6 +2,7 @@ import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import type { Database } from '../db/client.js';
 import * as q from './queries.js';
+import { listApprovedLocalFiles } from '../prep/artifacts.js';
 import { prepareApplication, applyUserAnswer, approvePreparation } from '../prep/prepare.js';
 
 /** Wrap an async handler so rejections become 500s instead of crashing. */
@@ -59,12 +60,18 @@ export function createApiApp(db: Database): Express {
     const summary = await prepareApplication(db, String(req.params['id']));
     res.json(summary);
   }));
+  r.get('/local-files', h(async (_req, res) => {
+    res.json({ files: listApprovedLocalFiles() });
+  }));
   r.post('/applications/:id/answers', h(async (req, res) => {
     const questionId = String(req.body?.questionId ?? '');
     const value = String(req.body?.value ?? '');
     const reusable = Boolean(req.body?.reusable);
+    const manual = Boolean(req.body?.manual);
+    const localFile = req.body?.localFile != null ? String(req.body.localFile) : undefined;
     if (!questionId) return res.status(400).json({ error: 'questionId required' });
-    await applyUserAnswer(db, questionId, value, { reusable });
+    const mode = manual ? 'manual' : localFile ? 'local_file' : 'text';
+    await applyUserAnswer(db, questionId, value, { reusable, mode, localFile });
     return res.json(await q.getApplicationDetail(db, String(req.params['id'])));
   }));
   r.post('/applications/:id/approve', h(async (req, res) => {

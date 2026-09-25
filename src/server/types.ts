@@ -87,6 +87,7 @@ export interface AppListItem {
 
 export interface PreparedQuestionView {
   questionId: string;
+  providerFieldId: string | null;
   label: string;
   category: string;
   fieldType: string;

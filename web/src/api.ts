@@ -27,4 +27,8 @@ export const api = {
   reviews: () => get<ReviewView[]>('/api/reviews'),
   resolveReview: (id: string, note?: string) => post(`/api/reviews/${id}/resolve`, { note }),
   rejectReview: (id: string, note?: string) => post(`/api/reviews/${id}/reject`, { note }),
+  prepareJob: (jobId: string) => post<{ applicationId: string | null }>(`/api/jobs/${jobId}/prepare`, {}),
+  answer: (appId: string, questionId: string, value: string, reusable: boolean) =>
+    post<AppDetail>(`/api/applications/${appId}/answers`, { questionId, value, reusable }),
+  approve: (appId: string) => post<AppDetail>(`/api/applications/${appId}/approve`, {}),
 };

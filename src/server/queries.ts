@@ -2,7 +2,7 @@ import { sql, type SQL } from 'drizzle-orm';
 import type { Database } from '../db/client.js';
 import {
   usersRepo, jobsRepo, jobSourcesRepo, matchesRepo,
-  applicationsRepo, eventsRepo, reviewsRepo,
+  applicationsRepo, eventsRepo, reviewsRepo, prepRepo,
 } from '../repositories/index.js';
 import { hasLlmCredential } from '../analysis/anthropicAnalyzer.js';
 import type { FitAnalysis } from '../analysis/types.js';
@@ -166,9 +166,13 @@ export async function listApplications(db: Database, statusFilter?: string): Pro
   const user = await usersRepo.getFirstUser(db);
   if (!user) return [];
   const rows = await db.execute(sql`
-    select a.id, a.job_id, a.status, a.created_at, a.updated_at,
+    select a.id, a.job_id, a.status, a.created_at, a.updated_at, a.provider, a.resume_status,
            j.company_name, j.title, j.location_text,
-           m.fit_score, m.fit_status
+           m.fit_score, m.fit_status,
+           (select count(*)::int from application_answers aa
+              join application_questions aq on aq.id = aa.question_id
+              where aa.application_id = a.id and aq.required
+                and aa.status in ('NEEDS_INPUT','NEEDS_GENERATION','UNSUPPORTED')) as unanswered_required
     from applications a
     join jobs j on j.id = a.job_id
     left join job_matches m on m.job_id = a.job_id and m.user_id = a.user_id
@@ -179,6 +183,8 @@ export async function listApplications(db: Database, statusFilter?: string): Pro
     company: (r['company_name'] as string) ?? null, title: (r['title'] as string) ?? null,
     status: r['status'] as AppListItem['status'],
     fitScore: (r['fit_score'] as number) ?? null, fitStatus: (r['fit_status'] as AppListItem['fitStatus']) ?? null,
+    provider: (r['provider'] as string) ?? null, resumeStatus: (r['resume_status'] as string) ?? null,
+    unansweredRequired: (r['unanswered_required'] as number) ?? 0,
     swiss: isSwiss(r['location_text'] as string),
     needsAttention: ATTENTION_STATUSES.includes(r['status'] as string),
     createdAt: iso(r['created_at'] as Date) ?? '', updatedAt: iso(r['updated_at'] as Date) ?? '',
@@ -192,6 +198,7 @@ export async function getApplicationDetail(db: Database, id: string): Promise<Ap
   const user = await usersRepo.getFirstUser(db);
   const match = user ? await matchesRepo.getMatch(db, user.id, app.jobId) : null;
   const events = await eventsRepo.getApplicationHistory(db, app.id);
+  const form = await prepRepo.getPreparedForm(db, app.id);
   return {
     id: app.id, jobId: app.jobId, company: job?.companyName ?? null, title: job?.title ?? null,
     status: app.status, attemptCount: app.attemptCount, requiresUserInput: app.requiresUserInput,
@@ -203,6 +210,18 @@ export async function getApplicationDetail(db: Database, id: string): Promise<Ap
     events: events.map((e) => ({
       id: e.id, eventType: e.eventType, fromStatus: e.fromStatus, toStatus: e.toStatus,
       metadata: e.metadata, createdAt: iso(e.createdAt) ?? '',
+    })),
+    provider: app.provider ?? null, applyUrl: app.applyUrl ?? null,
+    formUnderstood: app.formUnderstood, resumeStatus: app.resumeStatus ?? null,
+    preparationNote: app.preparationNote ?? null,
+    questions: form.map((r) => ({
+      questionId: r.question.id, label: r.question.label, category: r.question.category,
+      fieldType: r.question.fieldType, required: r.question.required,
+      options: (r.question.options as string[] | null) ?? null, sourceKind: r.question.sourceKind,
+      answer: {
+        value: r.answer.value, source: r.answer.answerSource, status: r.answer.status,
+        confidence: r.answer.confidence, approved: r.answer.approved, reusable: r.answer.reusable,
+      },
     })),
   };
 }

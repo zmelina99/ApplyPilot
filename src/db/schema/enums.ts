@@ -89,6 +89,48 @@ export const applicationEventTypeEnum = pgEnum('application_event_type', [
   'CAPTCHA_ENCOUNTERED',
   'AUTOMATION_FAILED',
   'APPLICATION_SUBMITTED',
+  // Phase 2D — supervised application preparation:
+  'PROVIDER_DETECTED',
+  'FORM_INSPECTED',
+  'QUESTION_DISCOVERED',
+  'ANSWER_PROPOSED',
+  'USER_ANSWERED',
+  'PREPARATION_VALIDATED',
+  'READY_FOR_APPROVAL',
+  'PREPARATION_APPROVED',
+]);
+
+// --- Phase 2D: application preparation ---
+export const applicationProviderEnum = pgEnum('application_provider', [
+  'GREENHOUSE',
+  'LEVER',
+  'ASHBY',
+  'WORKABLE',
+  'SMARTRECRUITERS',
+  'RECRUITEE',
+  'CUSTOM',
+  'AGGREGATOR',
+  'UNKNOWN',
+]);
+
+export const questionCategoryEnum = pgEnum('question_category', [
+  'NAME', 'EMAIL', 'PHONE', 'LOCATION', 'LINKEDIN', 'GITHUB', 'PORTFOLIO',
+  'RESUME', 'YEARS_EXPERIENCE', 'TECH_YEARS', 'WORK_AUTHORIZATION', 'SPONSORSHIP',
+  'SALARY_EXPECTATION', 'AVAILABILITY', 'EDUCATION', 'LANGUAGE', 'RELOCATION',
+  'EEO', 'COVER_LETTER', 'WHY_COMPANY', 'FREE_TEXT', 'UNKNOWN',
+]);
+
+export const questionSourceKindEnum = pgEnum('question_source_kind', [
+  'PROVIDER_FORM',
+  'STANDARD',
+]);
+
+export const answerSourceEnum = pgEnum('answer_source', [
+  'PROFILE', 'APPROVED_ANSWER', 'DETERMINISTIC_RULE', 'GENERATED', 'USER', 'UNKNOWN',
+]);
+
+export const answerStatusEnum = pgEnum('answer_status', [
+  'READY', 'NEEDS_INPUT', 'NEEDS_GENERATION', 'OPTIONAL_BLANK', 'UNSUPPORTED',
 ]);
 
 // --- Review queue ---

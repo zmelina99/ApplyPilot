@@ -10,7 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
 import { jobs } from './jobs.js';
-import { applicationStatusEnum } from './enums.js';
+import { applicationStatusEnum, applicationProviderEnum } from './enums.js';
 
 /**
  * ONE user applying to ONE job. Execution state only (QUEUED → … → APPLIED).
@@ -40,6 +40,12 @@ export const applications = pgTable(
     userInputReason: text('user_input_reason'),
     failureCategory: text('failure_category'),
     failureDetails: text('failure_details'),
+    // Phase 2D — supervised preparation:
+    provider: applicationProviderEnum('provider'),
+    applyUrl: text('apply_url'), // resolved external application URL (or aggregator page)
+    formUnderstood: boolean('form_understood').default(false).notNull(),
+    resumeStatus: text('resume_status'), // READY | MISSING
+    preparationNote: text('preparation_note'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

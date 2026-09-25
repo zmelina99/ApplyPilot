@@ -14,6 +14,7 @@ import {
 } from '../repositories/index.js';
 import { runDiscovery } from '../pipeline/discover.js';
 import { planAnalysis, runAnalysis, cleanupNonBlockingReviews } from '../pipeline/analyze.js';
+import { dryRunEligible, prepareEligible } from '../prep/prepare.js';
 import { loadCandidateFacts } from '../config/candidateFacts.js';
 import { buildCandidateAnalysis } from '../analysis/candidateAnalysis.js';
 import { AnthropicFitAnalyzer, hasLlmCredential, analyzerModel } from '../analysis/anthropicAnalyzer.js';
@@ -27,6 +28,7 @@ const USAGE = `ApplyPilot dev CLI
   discover                 Fetch real jobs, store, dedup, deterministic eligibility + salary
   analyze [--dry-run]      Semantic fit analysis of eligible + non-blocking-ambiguous jobs
   shortlist [--limit N] [--min-fit N]   Fit-ranked jobs worth applying to
+  prepare --eligible [--dry-run] [--limit N]   Prepare applications (NO submission)
   job <id>                 One job: sources, eligibility, and fit breakdown
   rejected                 Deterministically rejected jobs, by reason
   review [list|show <id>|resolve <id>|reject <id>|cleanup] [--note "..."]
@@ -237,6 +239,35 @@ async function cmdRejected(db: Database): Promise<void> {
   for (const [k, n] of Object.entries(byReason).sort((a, b) => b[1] - a[1])) console.log(`  ${String(k).padEnd(34)} ${n}`);
 }
 
+async function cmdPrepare(db: Database, flags: Parsed['flags']): Promise<void> {
+  const limit = flags['limit'] ? Number(flags['limit']) : undefined;
+  if (flags['dry-run']) {
+    console.log('Preparation dry run (read-only; no DB writes, no form mutations)…');
+    const r = await dryRunEligible(db, { limit });
+    console.log(`\n  Jobs considered:   ${r.considered}`);
+    console.log(`  Would create apps: ${r.wouldCreate}`);
+    console.log(`  Supported (auto):  ${r.supported}`);
+    console.log(`  Unsupported:       ${r.unsupported}`);
+    console.log(`  Aggregator-gated:  ${r.gated}`);
+    console.log('  Provider distribution:');
+    for (const [p, n] of Object.entries(r.byProvider).sort((a, b) => b[1] - a[1])) console.log(`    ${p.padEnd(16)} ${n}`);
+    console.log('\n  Destinations:');
+    for (const row of r.rows) console.log(`    ${row.provider.padEnd(12)} ${row.supported ? '✓' : ' '} ${row.company ?? '?'} — ${row.title ?? '?'}\n      ${row.applyUrl}`);
+    return;
+  }
+  if (!flags['eligible']) {
+    console.log('Usage: npm run prepare -- --eligible [--dry-run] [--limit N]');
+    return;
+  }
+  console.log('Preparing eligible applications (read-only inspection; NO submission)…');
+  const results = await prepareEligible(db, { limit });
+  const byStatus: Record<string, number> = {};
+  for (const r of results) byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+  console.log(`\nPrepared ${results.length} application(s):`);
+  for (const [s, n] of Object.entries(byStatus).sort((a, b) => b[1] - a[1])) console.log(`  ${s.padEnd(20)} ${n}`);
+  console.log('\nInspect in the UI (Applications) or: npm run cli -- applications');
+}
+
 async function cmdReview(db: Database, positionals: string[], flags: Parsed['flags']): Promise<void> {
   const sub = positionals[0] ?? 'list';
   const userId = await requireUserId(db);
@@ -324,6 +355,7 @@ async function main(): Promise<void> {
       case 'shortlist': await cmdShortlist(handle.db, flags); break;
       case 'job': if (!positionals[0]) throw new Error('Usage: cli job <id>'); await cmdJob(handle.db, positionals[0]); break;
       case 'rejected': await cmdRejected(handle.db); break;
+      case 'prepare': await cmdPrepare(handle.db, flags); break;
       case 'review': await cmdReview(handle.db, positionals, flags); break;
       case 'db': await cmdDb(handle.db); break;
       case 'migrate': await runMigrations(handle.db); console.log('Migrations applied.'); break;

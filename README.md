@@ -5,12 +5,14 @@ roles, filters them against the candidate's rules, analyzes fit, and (eventually
 applies — using **only verified candidate information** and escalating anything it
 cannot answer confidently.
 
-> **Status: Phase 2C.5 — local web UI.** ApplyPilot now has a polished local web app
-> (React + Vite, served by a thin Express API that reuses the existing repositories)
-> for reviewing discovered jobs, understanding why they match, seeing uncertainty, and
-> tracking applications. It runs with `npm run dev` and works fully **without** an
-> LLM key (unanalyzed jobs simply show "Not analyzed" — never a fake score). This
-> phase is UI + read-oriented management only: no application automation/submission.
+> **Status: Phase 2D — supervised application preparation.** ApplyPilot now turns
+> eligible jobs into real application work items: it resolves each job's actual
+> application destination (read-only), detects the ATS, prepares the answers it can
+> from verified facts, and flags what needs you — then **stops**. It **never submits**
+> and never sends candidate data to an employer. The web app (React + Vite + thin
+> Express API) gives a supervised workspace to review each prepared application, answer
+> open questions, and approve the preparation (approval ≠ submission). Runs with
+> `npm run dev`; works fully without an LLM key.
 >
 > Underlying it (Phase 2C): semantic fit analysis scores how well each eligible (or
 > non-blocking-ambiguous) job matches the candidate's *verified* experience, caches
@@ -387,7 +389,53 @@ npm run dev
 The UI runs fully without `ANTHROPIC_API_KEY`. Unanalyzed jobs show **"Not analyzed"**
 — never a fabricated score. No Anthropic calls are made from the UI.
 
-## Roadmap (Phase 2D+, deferred)
+## Phase 2D — supervised application preparation
+
+Turns eligible jobs into local, review-ready application work items. **No submission,
+no employer POST, no uploads, no browser automation** — all external access is
+read-only GET.
+
+```bash
+npm run prepare -- --eligible --dry-run   # resolve destinations, report provider mix (no writes)
+npm run prepare -- --eligible             # create/prepare applications (NO submission)
+npm run dev                               # review in the UI → Applications
+```
+
+**Flow:** eligible job → resolve real apply URL (follow redirects read-only) → detect
+ATS → inspect the form (structured providers only) → propose answers from verified
+facts → workspace at `READY_FOR_APPROVAL` / `NEEDS_USER_INPUT` / `MANUAL_REVIEW` /
+`LOGIN_REQUIRED` / `CAPTCHA` → **stop**.
+
+- **Providers:** a provider abstraction with ATS detection. **Greenhouse** is the
+  fully-supported *structured* provider (public `?questions=true` API → the real form
+  schema). Workable/Lever/Ashby/custom/aggregator-gated destinations are detected and
+  routed to `MANUAL_REVIEW` with the resolved apply URL + a standard answer set as an
+  aid. (Choice driven by inspecting the live dataset — see below.)
+- **Answering (deterministic, no LLM):** questions are classified (NAME, EMAIL,
+  YEARS_EXPERIENCE, TECH_YEARS, WORK_AUTHORIZATION, SALARY_EXPECTATION, EEO,
+  COVER_LETTER, …) and answered only from approved config + `.env` identity.
+  **Truthful by construction:** unknown → `NEEDS_INPUT` (never a guess); free-text
+  without an LLM → `NEEDS_GENERATION`; work-authorization/sponsorship are never
+  inferred; a specific-domain "years" is never stretched from total experience;
+  no-experience techs answer 0.
+- **Workspace (Applications → detail):** every discovered/standard question with its
+  proposed answer, source, and status; answer open questions inline, optionally
+  **save as a reusable approved answer** (explicit opt-in only); resume shown as
+  ready/missing (never uploaded); an append-only event timeline; and an **Approve**
+  action that marks the preparation reviewed and counts toward the supervised first-20
+  calibration — it performs no submission.
+
+**Data model:** `applications` gains provider/apply-url/form-understood/resume-status
+columns; new `application_questions`, `application_answers`, `saved_answers` tables.
+
+**On the current dataset** (`npm run prepare -- --eligible --dry-run`): the 17 eligible
+jobs resolve to **15 aggregator-gated (Jobicy, JS-rendered apply)**, **1 Workable**,
+**1 custom** — 0 Greenhouse. So all 17 prepare to `MANUAL_REVIEW` with their resolved
+apply URLs and a full standard answer set (name/email/portfolio/years/availability/
+education/languages/EEO ready; phone/work-auth/sponsorship flagged for you). The
+Greenhouse structured flow (→ `READY_FOR_APPROVAL`) is covered by the test suite.
+
+## Roadmap (Phase 2E+, deferred)
 
 Application form filling, browser automation and submission, cover-letter generation,
 reporting, and any hosted-product infrastructure. None of it is built yet. Truthful,

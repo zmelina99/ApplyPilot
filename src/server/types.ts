@@ -76,10 +76,31 @@ export interface AppListItem {
   status: ApplicationStatus;
   fitScore: number | null;
   fitStatus: FitStatus | null;
+  provider: string | null;
+  resumeStatus: string | null;
+  unansweredRequired: number;
   swiss: boolean;
   needsAttention: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface PreparedQuestionView {
+  questionId: string;
+  label: string;
+  category: string;
+  fieldType: string;
+  required: boolean;
+  options: string[] | null;
+  sourceKind: string;
+  answer: {
+    value: string | null;
+    source: string;
+    status: string;
+    confidence: string;
+    approved: boolean;
+    reusable: boolean;
+  };
 }
 
 export interface AppEventView {
@@ -109,6 +130,13 @@ export interface AppDetail {
   canonicalUrl: string;
   fit: { score: number | null; status: FitStatus | null };
   events: AppEventView[];
+  // Phase 2D preparation:
+  provider: string | null;
+  applyUrl: string | null;
+  formUnderstood: boolean;
+  resumeStatus: string | null;
+  preparationNote: string | null;
+  questions: PreparedQuestionView[];
 }
 
 export interface ReviewView {

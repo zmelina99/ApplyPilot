@@ -1,4 +1,5 @@
-import { Link, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import { useAsync } from '../hooks';
 import { Loading, ErrorState, Panel } from '../components';
@@ -45,6 +46,19 @@ function Lines({ items, mk, cls }: { items: string[]; mk: string; cls: string })
   return <>{items.map((t, i) => <div className="list-line" key={i}><span className={`mk ${cls}`}>{mk}</span><span>{t}</span></div>)}</>;
 }
 
+function PrepareButton({ jobId, applicationId }: { jobId: string; applicationId: string | null }) {
+  const nav = useNavigate();
+  const [busy, setBusy] = useState(false);
+  if (applicationId) return <Link className="btn" to={`/applications/${applicationId}`}>View application →</Link>;
+  return (
+    <button className="btn primary" disabled={busy} onClick={async () => {
+      setBusy(true);
+      try { const r = await api.prepareJob(jobId); if (r.applicationId) nav(`/applications/${r.applicationId}`); }
+      finally { setBusy(false); }
+    }}>{busy ? 'Preparing…' : 'Prepare application'}</button>
+  );
+}
+
 export function JobDetail() {
   const { id } = useParams();
   const { data: job, loading, error } = useAsync(() => api.job(id!), [id]);
@@ -72,7 +86,7 @@ export function JobDetail() {
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <a className="btn" href={job.canonicalUrl} target="_blank" rel="noreferrer">Open job posting ↗</a>
-          <button className="btn" disabled title="Coming in Phase 2D">Prepare application</button>
+          <PrepareButton jobId={job.id} applicationId={job.applicationId} />
         </div>
       </div>
 
@@ -146,7 +160,7 @@ export function JobDetail() {
                 ? <Link to={`/applications/${job.applicationId}`}><AppStatusBadge status={job.applicationStatus} /></Link>
                 : <span className="muted">No application yet.</span>}
               <div style={{ marginTop: 10 }}>
-                <button className="btn" disabled title="Coming in Phase 2D">Prepare application — Phase 2D</button>
+                <PrepareButton jobId={job.id} applicationId={job.applicationId} />
               </div>
             </div>
           </Panel>

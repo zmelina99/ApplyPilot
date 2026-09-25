@@ -23,6 +23,8 @@ export interface CandidateFacts {
   noExperience: string[];
   domainStrengths: string[];
   education: { universityDegree: boolean; highest: string; additional: string };
+  languages: { name: string; level: string }[];
+  relocation: string;
   availability: string;
 }
 
@@ -53,6 +55,8 @@ export function loadCandidateFacts(configPath: string = DEFAULT_PATH): Candidate
     noExperience: raw['noExperience'] as string[],
     domainStrengths: (raw['domainStrengths'] as string[]) ?? [],
     education: raw['education'] as CandidateFacts['education'],
+    languages: (raw['languages'] as CandidateFacts['languages']) ?? [],
+    relocation: (raw['relocation'] as string) ?? '',
     availability: raw['availability'] as string,
   };
 }

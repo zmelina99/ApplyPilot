@@ -51,3 +51,29 @@ export function canTransition(
 export function allowedNext(from: ApplicationStatus): readonly ApplicationStatus[] {
   return TRANSITIONS[from];
 }
+
+/**
+ * Shortest legal transition path from `from` to `to` (excluding `from`, including
+ * `to`), or null if unreachable. Used to drive preparation through valid intermediate
+ * states (e.g. QUEUED → APPLYING → READY_FOR_APPROVAL) without bypassing the machine.
+ */
+export function shortestPath(
+  from: ApplicationStatus,
+  to: ApplicationStatus,
+): ApplicationStatus[] | null {
+  if (from === to) return [];
+  const queue: ApplicationStatus[][] = [[from]];
+  const seen = new Set<ApplicationStatus>([from]);
+  while (queue.length) {
+    const path = queue.shift()!;
+    const last = path[path.length - 1]!;
+    for (const next of TRANSITIONS[last]) {
+      if (seen.has(next)) continue;
+      const newPath = [...path, next];
+      if (next === to) return newPath.slice(1);
+      seen.add(next);
+      queue.push(newPath);
+    }
+  }
+  return null;
+}

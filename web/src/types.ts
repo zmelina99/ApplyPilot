@@ -40,7 +40,14 @@ export interface JobDetail {
 export interface AppListItem {
   id: string; jobId: string; company: string | null; title: string | null;
   status: ApplicationStatus; fitScore: number | null; fitStatus: FitStatus | null;
+  provider: string | null; resumeStatus: string | null; unansweredRequired: number;
   swiss: boolean; needsAttention: boolean; createdAt: string; updatedAt: string;
+}
+
+export interface PreparedQuestionView {
+  questionId: string; label: string; category: string; fieldType: string;
+  required: boolean; options: string[] | null; sourceKind: string;
+  answer: { value: string | null; source: string; status: string; confidence: string; approved: boolean; reusable: boolean };
 }
 export interface AppEventView {
   id: string; eventType: string; fromStatus: string | null; toStatus: string | null; metadata: unknown; createdAt: string;
@@ -51,6 +58,8 @@ export interface AppDetail {
   failureCategory: string | null; failureDetails: string | null; currentStep: string | null;
   submittedAt: string | null; createdAt: string; updatedAt: string; canonicalUrl: string;
   fit: { score: number | null; status: FitStatus | null }; events: AppEventView[];
+  provider: string | null; applyUrl: string | null; formUnderstood: boolean;
+  resumeStatus: string | null; preparationNote: string | null; questions: PreparedQuestionView[];
 }
 export interface ReviewView {
   id: string; reviewType: string; status: string; reason: string | null;

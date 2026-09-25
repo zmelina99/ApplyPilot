@@ -54,5 +54,11 @@
     "highest": "Secondary School Diploma / Bachillerato en Ciencias Sociales",
     "additional": "Henry Full Stack Developer Bootcamp"
   },
+  "languages": [
+    { "name": "Spanish", "level": "Native" },
+    { "name": "English", "level": "C2" },
+    { "name": "French", "level": "B1" }
+  ],
+  "relocation": "Open to discussion",
   "availability": "immediate"
 }

@@ -47,16 +47,17 @@ export function Applications() {
               {rows.length === 0 ? <Empty big="Nothing here." /> : (
                 <div className="table-wrap">
                   <table className="tbl">
-                    <thead><tr><th>Company / Role</th><th>Status</th><th>Fit</th><th>Flags</th><th>Created</th><th>Updated</th></tr></thead>
+                    <thead><tr><th>Company / Role</th><th>Status</th><th>Provider</th><th>Progress</th><th>Fit</th><th>Flags</th><th>Updated</th></tr></thead>
                     <tbody>
                       {rows.map((a) => (
                         <tr key={a.id} onClick={() => nav(`/applications/${a.id}`)} tabIndex={0}
                             onKeyDown={(e) => { if (e.key === 'Enter') nav(`/applications/${a.id}`); }}>
                           <td><div className="cell-title">{a.title ?? '—'}</div><div className="cell-sub">{a.company ?? '—'}</div></td>
                           <td><AppStatusBadge status={a.status} /></td>
+                          <td className="cell-sub">{a.provider ?? '—'}</td>
+                          <td>{a.unansweredRequired > 0 ? <Badge tone="amber">{a.unansweredRequired} needs input</Badge> : <span className="muted">—</span>}{a.resumeStatus === 'MISSING' && <Badge tone="amber">resume</Badge>}</td>
                           <td><FitBadge status={a.fitStatus} score={a.fitScore} /></td>
-                          <td>{a.swiss && <Badge tone="violet">Swiss — review</Badge>}{a.needsAttention && !a.swiss && <Badge tone="amber">Action</Badge>}</td>
-                          <td className="num">{fmtWhen(a.createdAt)}</td>
+                          <td>{a.swiss && <Badge tone="violet">Swiss</Badge>}</td>
                           <td className="num">{fmtWhen(a.updatedAt)}</td>
                         </tr>
                       ))}

@@ -292,5 +292,26 @@ Invariants future agents MUST preserve:
   enums/state machine; it makes NO LLM calls and shows "Not analyzed" (never a fake
   score) without a key; non-blocking uncertainty stays on job details, out of the
   blocking review queue. No application automation/submission.
-- **Phase 2D+ (not started):** application form filling, browser automation,
-  submission, cover letters, reporting. Do not begin without an explicit go-ahead.
+- **Phase 2D (done): Supervised application preparation.** Provider abstraction +
+  read-only apply-URL resolver + ATS detection; Greenhouse structured provider (public
+  `?questions=true`); deterministic question classification + answering engine;
+  application_questions / application_answers / saved_answers tables; `prepare` CLI
+  (+ dry-run) and a UI workspace (questions, user answers, reusable opt-in, approve).
+  Invariants future agents MUST preserve:
+  - **NEVER submits / never sends candidate data to an employer.** All external access
+    is read-only GET (the `Fetcher` has no body/method). No POST to employer forms, no
+    uploads, no ATS accounts, no CAPTCHA/auth bypass.
+  - **Truthfulness:** answers come only from approved config (candidate-facts.json,
+    search-profile.json) and `.env` identity. Never invent skills/years/authorization/
+    experience. Unknown → NEEDS_INPUT (never a guess); free-text w/o LLM →
+    NEEDS_GENERATION; a specific-domain "years" is never stretched from total years.
+  - Only ELIGIBLE jobs are prepared; rejects never are. Idempotent per (user, job).
+  - Unsupported/opaque forms → MANUAL_REVIEW (with the resolved apply URL + standard
+    answers as an aid); login/CAPTCHA → those states. READY_FOR_APPROVAL only when a
+    supported form is fully answerable.
+  - Approval marks the local preparation reviewed and counts toward the supervised
+    first-20 calibration — it performs NO submission. Automation never self-enables;
+    Swiss applications always require human approval.
+  - Reusable answers are saved ONLY on explicit user opt-in.
+- **Phase 2E+ (not started):** actual submission, browser form-filling, cover-letter
+  generation, reporting. Do not begin without an explicit go-ahead.

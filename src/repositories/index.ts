@@ -10,3 +10,4 @@ export * as matchesRepo from './jobMatches.js';
 export * as applicationsRepo from './applications.js';
 export * as eventsRepo from './applicationEvents.js';
 export * as reviewsRepo from './reviewItems.js';
+export * as prepRepo from './applicationPrep.js';

@@ -2,6 +2,7 @@ import express, { type Express, type Request, type Response } from 'express';
 import cors from 'cors';
 import type { Database } from '../db/client.js';
 import * as q from './queries.js';
+import { prepareApplication, applyUserAnswer, approvePreparation } from '../prep/prepare.js';
 
 /** Wrap an async handler so rejections become 500s instead of crashing. */
 function h(fn: (req: Request, res: Response) => Promise<unknown>) {
@@ -51,6 +52,24 @@ export function createApiApp(db: Database): Express {
     const detail = await q.getApplicationDetail(db, String(req.params['id']));
     if (!detail) return res.status(404).json({ error: 'Application not found' });
     return res.json(detail);
+  }));
+
+  // --- Phase 2D: supervised application preparation (never submits) ---
+  r.post('/jobs/:id/prepare', h(async (req, res) => {
+    const summary = await prepareApplication(db, String(req.params['id']));
+    res.json(summary);
+  }));
+  r.post('/applications/:id/answers', h(async (req, res) => {
+    const questionId = String(req.body?.questionId ?? '');
+    const value = String(req.body?.value ?? '');
+    const reusable = Boolean(req.body?.reusable);
+    if (!questionId) return res.status(400).json({ error: 'questionId required' });
+    await applyUserAnswer(db, questionId, value, { reusable });
+    return res.json(await q.getApplicationDetail(db, String(req.params['id'])));
+  }));
+  r.post('/applications/:id/approve', h(async (req, res) => {
+    await approvePreparation(db, String(req.params['id']));
+    res.json(await q.getApplicationDetail(db, String(req.params['id'])));
   }));
 
   r.get('/reviews', h(async (_req, res) => res.json(await q.listBlockingReviews(db))));

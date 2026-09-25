@@ -435,7 +435,27 @@ apply URLs and a full standard answer set (name/email/portfolio/years/availabili
 education/languages/EEO ready; phone/work-auth/sponsorship flagged for you). The
 Greenhouse structured flow (→ `READY_FOR_APPROVAL`) is covered by the test suite.
 
-## Roadmap (Phase 2E+, deferred)
+### Phase 2E — read-only browser resolution of gated apply links
+
+Some aggregators (Jobicy) render the employer/ATS apply link client-side. A Playwright
+`BrowserResolver` (behind the existing resolver) navigates read-only and may follow the
+Apply link/redirects to the real destination, then re-runs preparation:
+
+```bash
+npm run resolve -- --gated [--limit N]
+```
+
+It **never** logs in, creates accounts, fills forms, uploads, solves CAPTCHAs, or
+submits. If the employer application is behind an aggregator **sign-in wall**, it stops
+and records `LOGIN_REQUIRED` (never bypassed). Resolved destinations flow through the
+existing provider detection — Greenhouse gets full structured prep; others stay
+`MANUAL_REVIEW`. Idempotent; one broken page never stops the batch.
+
+**On the current dataset:** all 15 Jobicy-gated jobs require signing in to reach the
+employer application, so they are reclassified `MANUAL_REVIEW → LOGIN_REQUIRED`
+(actionable: apply via Jobicy after signing in) — 0 reachable read-only, 0 submitted.
+
+## Roadmap (Phase 2F+, deferred)
 
 Application form filling, browser automation and submission, cover-letter generation,
 reporting, and any hosted-product infrastructure. None of it is built yet. Truthful,

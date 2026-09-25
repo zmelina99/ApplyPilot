@@ -10,7 +10,10 @@ import { loadCandidateFacts } from '../config/candidateFacts.js';
 import { loadCandidateIdentity } from '../config/candidateIdentity.js';
 import { loadSearchConfig } from '../config/searchConfig.js';
 import { detectDefaultResume } from './resume.js';
+import { and, eq } from 'drizzle-orm';
+import { applications } from '../db/schema/index.js';
 import { resolveApplyUrl, inspectDestination, httpFetcher, type Fetcher } from './resolve.js';
+import type { BrowserResolver } from './browserResolver.js';
 import { classifyQuestion } from './classify.js';
 import { answerQuestion, type AnswerContext, type PrepQuestion } from './answer.js';
 import { standardQuestions } from './standardQuestions.js';
@@ -128,7 +131,7 @@ async function firstSourceName(db: Database, jobId: string): Promise<string> {
 export async function prepareApplication(
   db: Database,
   jobId: string,
-  opts: { fetcher?: Fetcher } = {},
+  opts: { fetcher?: Fetcher; browserResolver?: BrowserResolver } = {},
 ): Promise<PrepSummary> {
   const fetcher = opts.fetcher ?? httpFetcher;
   const user = await usersRepo.getFirstUser(db) ?? (await usersRepo.createUser(db, { displayName: 'Local User' }));
@@ -139,7 +142,7 @@ export async function prepareApplication(
   const ctx = await buildContext(db, job);
   const sourceName = await firstSourceName(db, jobId);
 
-  const resolved = await resolveApplyUrl(job.canonicalUrl, sourceName, fetcher);
+  const resolved = await resolveApplyUrl(job.canonicalUrl, sourceName, fetcher, opts.browserResolver);
   const inspect = await inspectDestination(resolved, fetcher);
   const items = buildItems(inspect, ctx);
   const targetStatus = computeStatus(inspect, items);
@@ -220,6 +223,53 @@ export async function prepareEligible(db: Database, opts: { fetcher?: Fetcher; l
   const out: PrepSummary[] = [];
   for (const { job } of jobs) out.push(await prepareApplication(db, job.id, { fetcher: opts.fetcher }));
   return out;
+}
+
+/** Job ids of the user's applications that are still on an aggregator (gated). */
+async function gatedApplicationJobIds(db: Database): Promise<string[]> {
+  const user = await usersRepo.getFirstUser(db);
+  if (!user) return [];
+  const rows = await db
+    .select({ jobId: applications.jobId })
+    .from(applications)
+    .where(and(eq(applications.userId, user.id), eq(applications.provider, 'AGGREGATOR')));
+  return rows.map((r) => r.jobId);
+}
+
+export interface ResolveGatedReport {
+  considered: number;
+  resolved: number; // reached a real external destination
+  loginRequired: number; // aggregator sign-in wall (not bypassed)
+  stillGated: number; // no external destination and no sign-in wall
+  errors: number;
+  byProvider: Record<string, number>;
+  results: PrepSummary[];
+}
+
+/**
+ * Phase 2E: re-resolve aggregator-gated applications with a read-only browser
+ * resolver and re-run preparation. Idempotent; one broken page never stops the batch.
+ * Never logs in / submits.
+ */
+export async function resolveGated(
+  db: Database,
+  opts: { browserResolver: BrowserResolver; fetcher?: Fetcher; limit?: number },
+): Promise<ResolveGatedReport> {
+  const jobIds = (await gatedApplicationJobIds(db)).slice(0, opts.limit ?? 100);
+  const report: ResolveGatedReport = { considered: jobIds.length, resolved: 0, loginRequired: 0, stillGated: 0, errors: 0, byProvider: {}, results: [] };
+  for (const jobId of jobIds) {
+    try {
+      const s = await prepareApplication(db, jobId, { browserResolver: opts.browserResolver, fetcher: opts.fetcher });
+      report.results.push(s);
+      report.byProvider[s.provider] = (report.byProvider[s.provider] ?? 0) + 1;
+      if (s.provider !== 'AGGREGATOR') report.resolved++;
+      else if (s.status === 'LOGIN_REQUIRED') report.loginRequired++;
+      else report.stillGated++;
+    } catch {
+      report.errors++;
+    }
+  }
+  return report;
 }
 
 /** Recompute an application's status after its answers change (supported forms only). */

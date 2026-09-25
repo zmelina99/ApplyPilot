@@ -26,7 +26,9 @@ const TRANSITIONS: Record<ApplicationStatus, readonly ApplicationStatus[]> = {
   LOGIN_REQUIRED: ['QUEUED'],
   CAPTCHA: ['QUEUED'],
   AUTOMATION_FAILED: ['QUEUED'],
-  MANUAL_REVIEW: ['READY_FOR_APPROVAL'],
+  // MANUAL_REVIEW can be re-queued when new information arrives (e.g. Phase 2E
+  // browser re-resolution of a previously-gated destination).
+  MANUAL_REVIEW: ['READY_FOR_APPROVAL', 'QUEUED'],
   READY_FOR_APPROVAL: ['APPLIED'],
   APPLIED: [], // terminal
 };

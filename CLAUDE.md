@@ -313,5 +313,15 @@ Invariants future agents MUST preserve:
     first-20 calibration — it performs NO submission. Automation never self-enables;
     Swiss applications always require human approval.
   - Reusable answers are saved ONLY on explicit user opt-in.
-- **Phase 2E+ (not started):** actual submission, browser form-filling, cover-letter
+- **Phase 2E (done): Read-only browser resolution of aggregator-gated apply links.**
+  A `BrowserResolver` interface (Playwright impl, lazily imported) behind the existing
+  resolver: for Jobicy-gated jobs it navigates read-only and may follow the Apply
+  link/redirects to the real ATS, then re-runs the existing preparation pipeline.
+  Invariants: it NEVER logs in, creates accounts, fills forms, uploads, solves
+  CAPTCHAs, or submits; if the employer application sits behind an aggregator sign-in
+  wall it stops and records `LOGIN_REQUIRED` (never bypassed). Resolved URL + detected
+  provider are persisted; Greenhouse destinations get full structured prep, others stay
+  MANUAL_REVIEW. Idempotent; one broken page never stops the batch. CLI: `resolve
+  --gated`. (Live: all 15 current Jobicy jobs are sign-in-gated → LOGIN_REQUIRED.)
+- **Phase 2F+ (not started):** actual submission, browser form-filling, cover-letter
   generation, reporting. Do not begin without an explicit go-ahead.

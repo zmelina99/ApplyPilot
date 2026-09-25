@@ -2,6 +2,7 @@ import {
   detectProvider, parseGreenhouse, parseGreenhouseQuestions,
   type NormalizedQuestion, type ProviderName,
 } from './providers.js';
+import type { BrowserResolver } from './browserResolver.js';
 
 export interface FetchResult { status: number; finalUrl: string; text: string }
 export type Fetcher = (url: string) => Promise<FetchResult>;
@@ -43,23 +44,33 @@ export interface ResolveResult {
   applyUrl: string;
   provider: ProviderName;
   gated: boolean; // true when the real destination is hidden behind JS on an aggregator
+  loginRequired?: boolean;
   note?: string;
 }
 
 /**
  * Resolve a job's real application destination (read-only). Aggregator pages that
- * gate the apply link behind JS (e.g. Jobicy) return gated=true with the aggregator
- * page as the apply URL. Remotive/Arbeitnow expose an outbound apply link we follow.
+ * gate the apply link behind JS (e.g. Jobicy) stay gated unless a browserResolver is
+ * supplied (Phase 2E), which may follow the Apply link read-only to the real ATS — or
+ * report loginRequired if the aggregator gates it behind a sign-in wall (never
+ * bypassed). Remotive/Arbeitnow expose an outbound apply link we follow via fetch.
  */
 export async function resolveApplyUrl(
   canonicalUrl: string,
   sourceName: string,
   fetcher: Fetcher,
+  browserResolver?: BrowserResolver,
 ): Promise<ResolveResult> {
   const src = sourceName.toLowerCase();
   if (src === 'jobicy') {
-    // Jobicy renders the apply destination client-side; not resolvable read-only.
-    return { applyUrl: canonicalUrl, provider: 'AGGREGATOR', gated: true, note: 'Apply link is JS-rendered on Jobicy; apply on the page.' };
+    if (!browserResolver) {
+      return { applyUrl: canonicalUrl, provider: 'AGGREGATOR', gated: true, note: 'Apply link is JS-rendered on Jobicy; apply on the page.' };
+    }
+    const r = await browserResolver.resolve(canonicalUrl);
+    if (r.finalUrl && !/jobicy\.com/i.test(new URL(r.finalUrl).hostname)) {
+      return { applyUrl: r.finalUrl, provider: detectProvider(r.finalUrl), gated: false, note: r.note };
+    }
+    return { applyUrl: canonicalUrl, provider: 'AGGREGATOR', gated: true, loginRequired: r.loginRequired, note: r.note ?? 'Apply link is JS-rendered on Jobicy; apply on the page.' };
   }
   if (src === 'remotive' || src === 'arbeitnow') {
     try {
@@ -92,7 +103,7 @@ export interface InspectResult {
 export async function inspectDestination(resolved: ResolveResult, fetcher: Fetcher): Promise<InspectResult> {
   const base: InspectResult = {
     provider: resolved.provider, applyUrl: resolved.applyUrl, supported: false,
-    loginRequired: false, captcha: false, questions: [], note: resolved.note ?? null,
+    loginRequired: Boolean(resolved.loginRequired), captcha: false, questions: [], note: resolved.note ?? null,
   };
   if (resolved.provider !== 'GREENHOUSE') return base;
 

@@ -14,7 +14,8 @@ import {
 } from '../repositories/index.js';
 import { runDiscovery } from '../pipeline/discover.js';
 import { planAnalysis, runAnalysis, cleanupNonBlockingReviews } from '../pipeline/analyze.js';
-import { dryRunEligible, prepareEligible } from '../prep/prepare.js';
+import { dryRunEligible, prepareEligible, resolveGated } from '../prep/prepare.js';
+import { PlaywrightBrowserResolver } from '../prep/browserResolver.js';
 import { loadCandidateFacts } from '../config/candidateFacts.js';
 import { buildCandidateAnalysis } from '../analysis/candidateAnalysis.js';
 import { AnthropicFitAnalyzer, hasLlmCredential, analyzerModel } from '../analysis/anthropicAnalyzer.js';
@@ -29,6 +30,7 @@ const USAGE = `ApplyPilot dev CLI
   analyze [--dry-run]      Semantic fit analysis of eligible + non-blocking-ambiguous jobs
   shortlist [--limit N] [--min-fit N]   Fit-ranked jobs worth applying to
   prepare --eligible [--dry-run] [--limit N]   Prepare applications (NO submission)
+  resolve --gated [--limit N]   Browser-resolve aggregator-gated apply links (read-only)
   job <id>                 One job: sources, eligibility, and fit breakdown
   rejected                 Deterministically rejected jobs, by reason
   review [list|show <id>|resolve <id>|reject <id>|cleanup] [--note "..."]
@@ -268,6 +270,24 @@ async function cmdPrepare(db: Database, flags: Parsed['flags']): Promise<void> {
   console.log('\nInspect in the UI (Applications) or: npm run cli -- applications');
 }
 
+async function cmdResolve(db: Database, flags: Parsed['flags']): Promise<void> {
+  if (!flags['gated']) { console.log('Usage: npm run resolve -- --gated [--limit N]'); return; }
+  const limit = flags['limit'] ? Number(flags['limit']) : undefined;
+  console.log('Browser-resolving aggregator-gated applications (read-only; NO login, NO submission)…');
+  const r = await resolveGated(db, { browserResolver: new PlaywrightBrowserResolver(), limit });
+  console.log(`\n  Considered:        ${r.considered}`);
+  console.log(`  Resolved to real:  ${r.resolved}`);
+  console.log(`  Login required:    ${r.loginRequired} (aggregator sign-in wall, not bypassed)`);
+  console.log(`  Still gated:       ${r.stillGated}`);
+  console.log(`  Errors:            ${r.errors}`);
+  console.log('  Provider distribution after resolution:');
+  for (const [p, n] of Object.entries(r.byProvider).sort((a, b) => b[1] - a[1])) console.log(`    ${p.padEnd(14)} ${n}`);
+  const byStatus: Record<string, number> = {};
+  for (const s of r.results) byStatus[s.status] = (byStatus[s.status] ?? 0) + 1;
+  console.log('  Application status distribution:');
+  for (const [s, n] of Object.entries(byStatus).sort((a, b) => b[1] - a[1])) console.log(`    ${s.padEnd(20)} ${n}`);
+}
+
 async function cmdReview(db: Database, positionals: string[], flags: Parsed['flags']): Promise<void> {
   const sub = positionals[0] ?? 'list';
   const userId = await requireUserId(db);
@@ -356,6 +376,7 @@ async function main(): Promise<void> {
       case 'job': if (!positionals[0]) throw new Error('Usage: cli job <id>'); await cmdJob(handle.db, positionals[0]); break;
       case 'rejected': await cmdRejected(handle.db); break;
       case 'prepare': await cmdPrepare(handle.db, flags); break;
+      case 'resolve': await cmdResolve(handle.db, flags); break;
       case 'review': await cmdReview(handle.db, positionals, flags); break;
       case 'db': await cmdDb(handle.db); break;
       case 'migrate': await runMigrations(handle.db); console.log('Migrations applied.'); break;

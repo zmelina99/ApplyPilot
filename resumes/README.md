@@ -11,4 +11,9 @@ Guidance:
 - If you keep multiple variants (e.g. frontend vs. full-stack), note which is the
   default here.
 
-default_resume: NEEDS_USER_INPUT
+**Approved default:** set `resume.defaultFile` in `config/application-defaults.json`
+to the filename (not a path). ApplyPilot uses that file only when it exists in this
+folder. If `defaultFile` is `null` or the file is missing, preparation marks the
+resume as unavailable — it never guesses a path.
+
+Personal resume files in this folder are gitignored; only this README is committed.

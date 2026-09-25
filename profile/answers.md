@@ -44,21 +44,38 @@ Notes:
 - Optional field → leave blank.
 - Mandatory free-text → use the negotiable statement above.
 - Mandatory numeric → use the market-specific value below (never invent one).
-- Non-EUR/CHF currency, or ambiguous period (monthly/hourly/daily) → escalate; do NOT
-  convert or guess until deterministic conversion is implemented.
+- USD hourly mandatory numeric → use `salary_numeric_usd_hourly` (35).
+- Other non-EUR/CHF/USD-hourly currency or ambiguous period (monthly/daily) → escalate;
+  do NOT convert or guess until deterministic conversion is implemented.
 - Never disclose current/previous salary unless explicitly approved later.
 
 #### Salary numeric config (explicit; do not compute others at runtime)
 - salary_numeric_eur: 60000    # European / non-Swiss mandatory numeric expectation  [APPROVED]
 - salary_numeric_chf: 100000   # Swiss mandatory numeric expectation (target; never below 85000)  [APPROVED]
+- salary_numeric_usd_hourly: 35   # USD hourly mandatory numeric expectation  [APPROVED]
 - salary_floor_eur: 50000  [APPROVED]   # see search-rules.md
 - salary_floor_chf: 85000  [APPROVED]   # hard reject below; do not reject 85k–100k
-- salary_numeric_other_currency: escalate  [APPROVED]
+- salary_numeric_other_currency: escalate unless covered above  [APPROVED]
 
 ### Notice period / availability to start
 Answer: Immediately.
 Status: APPROVED
-Notes: Candidate is currently available to start immediately.
+Notes: Candidate is currently available to start immediately. If a form requires a
+concrete calendar date instead of the word "Immediate", use the actual application
+date at runtime (never a hardcoded date). Machine config: `config/application-defaults.json`.
+
+### Weekly hours commitment (full-time)
+Answer: 40 hours per week.
+Status: APPROVED
+Notes: Default full-time availability. Machine config: `weeklyHours: 40`.
+
+### Application country (forms — not work authorization)
+Answer: Switzerland for Swiss-targeted roles; Spain otherwise.
+Status: APPROVED
+Notes: Used for "country of residence" and similar application fields. This is an
+application default — never infer work authorization, visa status, or legal right to
+work from this country choice. Machine config: `applicationCountry` in
+`config/application-defaults.json`.
 
 ### Willingness to relocate
 Answer: Open to discussion.
@@ -73,9 +90,11 @@ Status: APPROVED
 Notes: Keep consistent with search-rules.md location & arrangement rules.
 
 ### Current location
-Answer: ${CANDIDATE_CURRENT_CITY}, ${CANDIDATE_CURRENT_COUNTRY}   # values in .env
-Status: NEEDS_USER_INPUT
-Notes: Not yet provided in .env.
+Answer: ${CANDIDATE_CURRENT_CITY}, ${CANDIDATE_CURRENT_COUNTRY} when both are set in
+`.env`; otherwise use the approved application country (Switzerland / Spain per role).
+Status: APPROVED
+Notes: `.env` city/country are optional refinements. Country-only form fields use the
+application-country rule above — not work authorization.
 
 ### Years of professional experience (overall)
 Answer: 4+ years (integer form: 4)

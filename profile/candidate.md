@@ -32,9 +32,11 @@ Status tags apply to the value in `.env` (or inline):
 ## Location  (values in .env)
 
 - current_city: ${CANDIDATE_CURRENT_CITY}  [NEEDS_USER_INPUT]
-  - note: The resume shows the most recent role as "Ticino, Switzerland – Remote,"
-    but does not state current residence. Do not assume.
+  - note: Optional refinement for forms. Application country defaults (Switzerland for
+    Swiss roles, Spain otherwise) live in `config/application-defaults.json` — never
+    conflated with work authorization.
 - current_country: ${CANDIDATE_CURRENT_COUNTRY}  [NEEDS_USER_INPUT]
+  - note: Optional refinement. See application-country defaults in answers.md.
 - timezone: ${CANDIDATE_TIMEZONE}  [NEEDS_USER_INPUT]
 - open_to_relocation: Open to discussion — not committed  [APPROVED]   # see search-rules.md
 - availability_to_start: Immediate  [APPROVED]

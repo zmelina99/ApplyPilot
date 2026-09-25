@@ -2,6 +2,10 @@
 .env
 .env.*.local
 
+# Resume files — local only; README stays tracked
+resumes/*
+!resumes/README.md
+
 # Node / TypeScript build artifacts
 node_modules/
 dist/

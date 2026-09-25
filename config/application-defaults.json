@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "description": "Machine-readable APPROVED application defaults for supervised preparation. Derived from profile/answers.md and profile/candidate.md. Used for deterministic form answers — never for work authorization inference.",
+    "derivedFrom": "profile/answers.md, profile/candidate.md, resumes/README.md",
+    "profileVersion": "2d-1"
+  },
+  "availability": "immediate",
+  "weeklyHours": 40,
+  "applicationCountry": {
+    "swissJob": "Switzerland",
+    "default": "Spain"
+  },
+  "salary": {
+    "usdHourly": 35
+  },
+  "resume": {
+    "defaultFile": null
+  }
+}

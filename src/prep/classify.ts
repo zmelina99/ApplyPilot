@@ -29,9 +29,11 @@ export function classifyQuestion(labelRaw: string, fieldType = 'text'): Question
   if (has(/authoriz|authoris|right to work|legally (able|entitled)|work permit|visa status/)) return 'WORK_AUTHORIZATION';
   if (has(/salary|compensation|expected pay|rate expectation|desired (pay|salary)/)) return 'SALARY_EXPECTATION';
   if (has(/relocat/)) return 'RELOCATION';
-  if (has(/notice period|start date|available|availability|when can you/)) return 'AVAILABILITY';
+  if (has(/hours? per week|hours?\/week|weekly hours|commit.*per week|hours could you commit/)) return 'AVAILABILITY';
+  if (has(/notice period|start date|available|availability|when can you|when could you begin/)) return 'AVAILABILITY';
   if (has(/degree|education|university|bachelor|master|diploma|school/)) return 'EDUCATION';
   if (has(/language/)) return 'LANGUAGE';
+  if (has(/country.*residence|territory of residence|residence.*country/)) return 'LOCATION';
   if (has(/current (city|location)|where are you (based|located)|city|country|location/)) return 'LOCATION';
 
   if (has(/\byears?\b/) || (has(/how (many|long)/) && has(/experien/))) {

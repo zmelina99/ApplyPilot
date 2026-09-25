@@ -3,15 +3,17 @@ import { classifyQuestion } from '../src/prep/classify.js';
 import { detectProvider, parseGreenhouse, parseGreenhouseQuestions } from '../src/prep/providers.js';
 import { answerQuestion, type AnswerContext, type PrepQuestion } from '../src/prep/answer.js';
 import { standardQuestions } from '../src/prep/standardQuestions.js';
+import { loadApplicationDefaults } from '../src/config/applicationDefaults.js';
 import { loadCandidateFacts } from '../src/config/candidateFacts.js';
 import { loadSearchConfig } from '../src/config/searchConfig.js';
-
+import { formatConcreteStartDate } from '../src/prep/dates.js';
 const facts = loadCandidateFacts();
 const salary = loadSearchConfig().salary;
+const applicationDefaults = loadApplicationDefaults();
 
 function ctx(over: Partial<AnswerContext> = {}): AnswerContext {
   return {
-    facts, salary,
+    facts, salary, applicationDefaults,
     identity: { fullName: 'Test User', email: 't@example.com', phone: null, location: 'Valencia, Spain', linkedinUrl: null, githubUrl: null, portfolioUrl: 'https://example.com' },
     swissRole: false, resumeAvailable: true, saved: new Map(),
     ...over,
@@ -32,6 +34,8 @@ describe('question classification', () => {
     expect(classifyQuestion('Years of professional software experience')).toBe('YEARS_EXPERIENCE');
     expect(classifyQuestion('Why do you want to work here?')).toBe('WHY_COMPANY');
     expect(classifyQuestion('Gender')).toBe('EEO');
+    expect(classifyQuestion('Country (or territory) of residence')).toBe('LOCATION');
+    expect(classifyQuestion('On average, how many hours could you commit per week?')).toBe('AVAILABILITY');
     expect(classifyQuestion('Something unusual and specific')).toBe('UNKNOWN');
   });
 });
@@ -83,6 +87,21 @@ describe('deterministic answering — truthfulness', () => {
     expect(ask('Expected salary', { required: true, fieldType: 'number' })).toMatchObject({ value: '60000', status: 'READY' });
     expect(answerQuestion({ label: 'Expected salary', category: 'SALARY_EXPECTATION', fieldType: 'number', required: true, options: null }, ctx({ swissRole: true }))).toMatchObject({ value: '100000' });
     expect(ask('What is your salary expectation?', { required: true })).toMatchObject({ status: 'READY', source: 'APPROVED_ANSWER' });
+    expect(ask('How much compensation (in USD) would you expect per hour of labor?')).toMatchObject({ value: '35', status: 'READY' });
+  });
+  it('uses approved application defaults for country, hours, and runtime start dates', () => {
+    expect(ask('Country (or territory) of residence')).toMatchObject({ value: 'Spain', status: 'READY' });
+    expect(answerQuestion(
+      { label: 'Country (or territory) of residence', category: 'LOCATION', fieldType: 'text', required: true, options: null },
+      ctx({ swissRole: true }),
+    )).toMatchObject({ value: 'Switzerland', status: 'READY' });
+    expect(ask('On average, how many hours could you commit to Kobo per week?')).toMatchObject({ value: '40', status: 'READY' });
+    const ref = new Date(2026, 8, 25);
+    expect(answerQuestion(
+      { label: 'When could you begin working with us?', category: 'AVAILABILITY', fieldType: 'text', required: true, options: null, placeholder: 'MM/DD/YYYY' },
+      ctx({ referenceDate: ref }),
+    )).toMatchObject({ value: formatConcreteStartDate(ref, 'MM/DD/YYYY'), status: 'READY' });
+    expect(ask('Earliest start date / availability')).toMatchObject({ value: 'Immediate', status: 'READY' });
   });
   it('handles EEO with and without a decline option', () => {
     expect(ask('Gender', { required: true, options: ['Male', 'Female', 'Prefer not to say'] })).toMatchObject({ value: 'Prefer not to say', status: 'READY' });

@@ -1,8 +1,10 @@
+import type { ApplicationDefaults } from '../config/applicationDefaults.js';
 import type { CandidateFacts } from '../config/candidateFacts.js';
 import type { CandidateIdentity } from '../config/candidateIdentity.js';
 import type { SearchConfig } from '../config/searchConfig.js';
 import type { QuestionCategory } from './classify.js';
 import { namedTech } from './classify.js';
+import { expectsConcreteStartDate, formatConcreteStartDate } from './dates.js';
 
 export type AnswerSource = 'PROFILE' | 'APPROVED_ANSWER' | 'DETERMINISTIC_RULE' | 'GENERATED' | 'USER' | 'UNKNOWN';
 export type AnswerStatus = 'READY' | 'NEEDS_INPUT' | 'NEEDS_GENERATION' | 'OPTIONAL_BLANK' | 'UNSUPPORTED';
@@ -13,16 +15,20 @@ export interface PrepQuestion {
   fieldType: string;
   required: boolean;
   options?: string[] | null;
+  placeholder?: string | null;
 }
 
 export interface AnswerContext {
   facts: CandidateFacts;
   identity: CandidateIdentity;
   salary: SearchConfig['salary'];
+  applicationDefaults: ApplicationDefaults;
   swissRole: boolean;
   resumeAvailable: boolean;
   /** Reusable saved answers, keyed by `${category}` or `${category}:${techOrLabel}`. */
   saved: Map<string, string>;
+  /** Application/runtime date for concrete start-date fields (defaults to today). */
+  referenceDate?: Date;
 }
 
 export interface ProposedAnswer {
@@ -60,7 +66,7 @@ export function answerQuestion(q: PrepQuestion, ctx: AnswerContext): ProposedAns
     case 'LINKEDIN': return identity.linkedinUrl ? ready(identity.linkedinUrl, 'PROFILE') : needsInput();
     case 'GITHUB': return identity.githubUrl ? ready(identity.githubUrl, 'PROFILE') : needsInput();
     case 'PORTFOLIO': return identity.portfolioUrl ? ready(identity.portfolioUrl, 'PROFILE') : needsInput();
-    case 'LOCATION': return identity.location ? ready(identity.location, 'PROFILE') : needsInput();
+    case 'LOCATION': return answerLocation(q, ctx);
 
     case 'RESUME': return ctx.resumeAvailable ? ready('Attach default resume', 'PROFILE') : needsInput();
 
@@ -89,9 +95,7 @@ export function answerQuestion(q: PrepQuestion, ctx: AnswerContext): ProposedAns
       // Truthful, safe default: the human answers these per-role. Never inferred.
       return needsInput();
 
-    case 'AVAILABILITY':
-      if (q.fieldType === 'date') return needsInput();
-      return ready(cap(facts.availability), 'DETERMINISTIC_RULE');
+    case 'AVAILABILITY': return answerAvailability(q, ctx);
 
     case 'RELOCATION':
       return facts.relocation ? ready(facts.relocation, 'PROFILE') : needsInput();
@@ -131,6 +135,12 @@ export function answerQuestion(q: PrepQuestion, ctx: AnswerContext): ProposedAns
 
 function answerSalary(q: PrepQuestion, ctx: AnswerContext): ProposedAnswer {
   if (!q.required) return optionalBlank();
+  const label = q.label.toLowerCase();
+  const hourly = /hour|\/hr|hourly|per hour/.test(label);
+  const usd = /usd|\$|dollar|u\.s\. dollar/.test(label);
+  if (hourly && usd) {
+    return ready(String(ctx.applicationDefaults.salary.usdHourly), 'DETERMINISTIC_RULE', 'high');
+  }
   const numeric = /number|integer|currency|decimal|money/.test(q.fieldType);
   if (numeric) {
     const target = ctx.swissRole ? ctx.salary.targets['CHF'] : ctx.salary.targets['EUR'];
@@ -141,6 +151,36 @@ function answerSalary(q: PrepQuestion, ctx: AnswerContext): ProposedAnswer {
     'Negotiable based on the scope of the role, total compensation, and employment arrangement.',
     'APPROVED_ANSWER', 'high',
   );
+}
+
+function applicationCountry(ctx: AnswerContext): string {
+  return ctx.swissRole
+    ? ctx.applicationDefaults.applicationCountry.swissJob
+    : ctx.applicationDefaults.applicationCountry.default;
+}
+
+function answerLocation(q: PrepQuestion, ctx: AnswerContext): ProposedAnswer {
+  const label = q.label.toLowerCase();
+  if (/authoriz|authorization|authorisation|right to work|work permit|visa/.test(label)) {
+    return needsInput();
+  }
+  if (/country|territory|residence|nation/.test(label)) {
+    return ready(applicationCountry(ctx), 'DETERMINISTIC_RULE');
+  }
+  return ctx.identity.location ? ready(ctx.identity.location, 'PROFILE') : needsInput();
+}
+
+function answerAvailability(q: PrepQuestion, ctx: AnswerContext): ProposedAnswer {
+  const label = q.label.toLowerCase();
+  if (/hours? per week|hours?\/week|weekly hours|commit.*hours|hours could you commit/.test(label)) {
+    return ready(String(ctx.applicationDefaults.weeklyHours), 'DETERMINISTIC_RULE');
+  }
+  if (expectsConcreteStartDate(label, q.fieldType, q.placeholder ?? '')) {
+    if (ctx.facts.availability.toLowerCase() !== 'immediate') return needsInput();
+    const when = ctx.referenceDate ?? new Date();
+    return ready(formatConcreteStartDate(when, q.placeholder ?? ''), 'DETERMINISTIC_RULE');
+  }
+  return ready(cap(ctx.facts.availability), 'DETERMINISTIC_RULE');
 }
 
 function cap(s: string): string {

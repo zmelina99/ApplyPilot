@@ -6,6 +6,7 @@ import {
   usersRepo, jobsRepo, jobSourcesRepo, matchesRepo, applicationsRepo, eventsRepo, prepRepo, automationRepo,
 } from '../repositories/index.js';
 import { namedTech } from './classify.js';
+import { loadApplicationDefaults } from '../config/applicationDefaults.js';
 import { loadCandidateFacts } from '../config/candidateFacts.js';
 import { loadCandidateIdentity } from '../config/candidateIdentity.js';
 import { loadSearchConfig } from '../config/searchConfig.js';
@@ -44,9 +45,13 @@ async function buildContext(db: Database, job: Job): Promise<AnswerContext> {
   const cfg = loadSearchConfig();
   const user = await usersRepo.getFirstUser(db);
   const saved = user ? await prepRepo.getSavedAnswersMap(db, user.id) : new Map<string, string>();
+  const applicationDefaults = loadApplicationDefaults();
   const resume = detectDefaultResume();
   const swissRole = SWISS.test(job.locationText ?? '') || (job.salaryCurrency ?? '').toUpperCase() === 'CHF';
-  return { facts, identity, salary: cfg.salary, swissRole, resumeAvailable: resume.available, saved };
+  return {
+    facts, identity, salary: cfg.salary, applicationDefaults, swissRole,
+    resumeAvailable: resume.available, saved, referenceDate: new Date(),
+  };
 }
 
 /** Build the (question, proposed-answer) pairs for a job from an inspection result. */
